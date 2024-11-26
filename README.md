@@ -1,2 +1,10 @@
-# novartis_datathon_2024
-https://godatathon.com/
+# Novartis Datathon 2024
+
+## About
+
+[Website](https://godatathon.com)
+
+## Team
+
+- Simon Walker
+- Johannes Schöck
