@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Streamlit app.py",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "env": {
+                "STREAMLIT_APP": "\\src\\app.py",
+                "PYTHONPATH": "${workspaceRoot}",
+                "PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "30"
+            },
+            "args": [
+                "run",
+                "${workspaceRoot}\\${STREAMLIT_APP}"
+            ],
+            "redirectOutput": true,
+            "preLaunchTask": "poetry install",
+        },
+    ]
+  }
+  

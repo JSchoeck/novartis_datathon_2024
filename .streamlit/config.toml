@@ -1,0 +1,21 @@
+# https://docs.streamlit.io/develop/concepts/configuration/theming
+
+[theme]
+base="light"
+# base="dark"  # dark mode
+primaryColor="#0080ff"
+# primaryColor="#0080ff"  # dark mode
+# backgroundColor="#FFFFFF"
+secondaryBackgroundColor="#d7e7ff"
+# secondaryBackgroundColor="#00183d"  # dark mode
+# textColor="#262730"
+# font="sans serif"  # sans serif, serif, monospace
+
+[client]
+# https://docs.streamlit.io/develop/concepts/architecture/app-chrome#customize-the-menu
+toolbarMode="auto"  # "developer", "minimal", "auto"
+showSidebarNavigation = false  # Controls whether the default sidebar page navigation in a multi-page app is displayed.
+# Alternatively build custom navigation: https://docs.streamlit.io/develop/tutorials/multipage/st.page_link-nav
+
+[browser]
+gatherUsageStats = false  # always set to false, otherwise user data will be sent to api.segment.io

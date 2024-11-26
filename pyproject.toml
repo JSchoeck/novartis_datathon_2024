@@ -1,0 +1,86 @@
+[tool.poetry]
+name = "novartis-datathon-2024"
+version = "0.1.0"
+description = "A data science project for the Novartis Datathon 2024"
+authors = ["Simon Walker <simonnwalker297@gmail.com>", "Johannes Schöck <johannes@schoeck.org>"]
+license = "Unlicense"
+package-mode = false
+readme = "README.md"
+repository = "https://github.com/JSchoeck/novartis_datathon_2024"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# bokeh = { version = "^3.3", optional = true }
+# cartopy = { version = "^0.22", optional = true }  # required for hvplot geo plots; install "plotting" extras as well
+# geopandas = { version = "^0.14", optional = true }
+# geopy = { version = "^2.4", optional = true }
+# geoviews = { version = "^1.11", optional = true }  # required for hvplot geo plots; install "plotting" extras as well
+# holidays = "^0.42"
+# holoviews = { version = "^1.18", optional = true }
+# hvplot = { version = "^0.10", optional = true }
+lightgbm = "^4.5"
+matplotlib = "^3.9"
+# meteostat ="^1.6"
+numpy = "^2.1"
+# openpyxl = { version = "^3.1.2", optional = true }
+pandas = { version = "^2.2", extras = ["feather"] }
+pyyaml = "^6.0.2"
+# requests = "^2.32.3"
+scikit-learn = "^1.5"
+# seaborn = "^0.13"
+# shap = "^0.44"
+# sqlalchemy = "^2.0"
+streamlit = "^1.40"
+# tenacity = "^8.2"
+xgboost = "^2.1"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29"
+ipython = "^8.29"
+ipywidgets = "^8.1"
+jupyter-bokeh = "^4.0.5"
+jupyter_contrib_nbextensions = "^0.7"
+jupyter = "^1.1"
+markdown = "^3.5"
+pytest = "^8.3"
+ruff = "^0.8"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+show-fixes = true
+# select = ["E", "F", "W", "C90"]
+# ignore = ["E501"]
+# exclude = ["build", "dist"]
+
+[tool.pyright]
+include = ["**/*"]
+exclude = ["**/site-packages/**"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "D", "Q", "W", "I", "N", "ANN", "COM", "C4", "EM", "PT", "SIM", "RUF", "NPY", "TRY", "PLW", "PLE", "PLC", "PLR", "PD"]
+ignore = ["E501", "D100", "D103", "D206", "D300", "D104", "N803", "N806", "PD901", "RUF005", "E712", "COM812", "COM819", "E111", "E114", "E117", "W191", "ANN101"]
+unfixable = ["F401", "F841"]
+task-tags = ["TODO", "BUG", "NOTE"]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+docstring-quotes = "double"  # only "double" is compatible with ruff formatter
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
