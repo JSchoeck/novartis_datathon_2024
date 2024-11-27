@@ -4,8 +4,11 @@ from streamlit import session_state as ss
 
 import utils
 
+logging = utils.get_logger(level="auto")
+
 
 def init() -> None:
+    logging.debug("Initializing Streamlit app.")
     ss.settings = utils.load_settings()
 
 
@@ -16,6 +19,7 @@ def main() -> None:
     st.write(pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}))
 
     if "load_data" in ss:
+        logging.debug("Data loaded.")
         st.markdown("## Data")
         st.write(ss.data_input)
 
@@ -25,4 +29,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    init()
     main()
