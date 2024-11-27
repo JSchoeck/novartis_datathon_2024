@@ -23,11 +23,17 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.11"
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        export PATH="$HOME/.local/bin:$PATH"
+    
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        export PATH="$HOME/.local/bin:$PATH"
+        poetry install
+        
     - name: ruff-action
       # You may pin to the exact commit or the version.
       # uses: astral-sh/ruff-action@d0a0e814ec17e92d33be7d24dd922b479f1bcd38
@@ -44,4 +50,5 @@ jobs:
                 
     - name: Test with pytest
       run: |
-        pytest
+        export PATH="$HOME/.local/bin:$PATH"
+        poetry run pytest
