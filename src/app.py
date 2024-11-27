@@ -25,7 +25,7 @@ def main() -> None:
 
     with st.sidebar:
         st.write("This is the sidebar.")
-        ss.load_data = st.button("Load data", on_click=utils.load_data)
+        ss.load_data = st.button("Load data", on_click=utils.load_data_to_streamlit)
 
 
 if __name__ == "__main__":

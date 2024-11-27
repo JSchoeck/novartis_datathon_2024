@@ -102,11 +102,21 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         return yaml.safe_load(file)
 
 
-def load_data() -> None:
-    """Load data into streamlit session state."""
+def load_data() -> dict[str, Any]:
+    """Load data."""
     logging = get_logger(level="auto")
     root = Path.cwd()
+
     example_file = root.joinpath("data/input/example.csv")
     logging.info(f"Loading data from {example_file!s}")
-    ss.data_input = pd.read_csv(example_file)
+    example_data = pd.read_csv(example_file)
     logging.debug("Data loaded successfully.")
+
+    return {"example_data": example_data}
+
+
+def load_data_to_streamlit() -> None:
+    """Load data to Streamlit."""
+    logging = get_logger(level="auto")
+    ss.data_input = load_data()
+    logging.debug("Data loaded to Streamlit.")
