@@ -9,7 +9,7 @@ readme = "README.md"
 repository = "https://github.com/JSchoeck/novartis_datathon_2024"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.12"
 
 # bokeh = { version = "^3.3", optional = true }
 # cartopy = { version = "^0.22", optional = true }  # required for hvplot geo plots; install "plotting" extras as well
@@ -22,7 +22,8 @@ python = "^3.11"
 lightgbm = "^4.5"
 matplotlib = "^3.9"
 # meteostat ="^1.6"
-numpy = "^2.1"
+numba = "<0.61"
+numpy = "^2.0"
 # openpyxl = { version = "^3.1.2", optional = true }
 pandas = { version = "^2.2", extras = ["feather"] }
 pyyaml = "^6.0.2"
@@ -46,6 +47,7 @@ jupyter = "^1.1"
 markdown = "^3.5"
 pytest = "^8.3"
 ruff = "^0.8"
+ydata-profiling = "^4.12"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
