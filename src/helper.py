@@ -10,8 +10,7 @@ you want to test the metric with your own train/validation splits.
 from pathlib import Path
 
 import pandas as pd
-import xgboost as xgb
-
+from models.models import XgBoost
 
 def _CYME(df: pd.DataFrame) -> float:  # noqa: N802
     """Compute the CYME metric, that is 1/2(median(yearly error) + median(monthly error))."""
@@ -100,19 +99,9 @@ if __name__ == "__main__":
         "public_perc_che",
     ]
     features = category_features + num_features
-    X_train = train_data[features].astype({col: "category" for col in category_features})
-    y_train = train_data["target"]
-    X_test = validation[features].astype({col: "category" for col in category_features})
-
-    # TODO: tune hyperparameters to achieve better results
-    xgboost = xgb.XGBRegressor(tree_method="hist", max_depth=4, enable_categorical=True)
-    xgboost.fit(X_train, y_train)
-    xgboost_preds = xgboost.predict(X_test)
-
-    print(xgboost_preds)
-
+    xgbooster = XgBoost()
     # Perform predictions on validation set
-    validation["prediction"] = xgboost.predict(X_test)
+    validation["prediction"] = xgbooster.predict(train_data, validation, num_features, category_features)
 
     # Assign column ["zero_actuals"] in the depending if in your
     # split the cluster_nl has already had actuals on train or not
