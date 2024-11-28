@@ -18,6 +18,17 @@
             "redirectOutput": true,
             "preLaunchTask": "poetry install",
         },
+        {
+            "name": "Debug current file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "autoReload": {
+                "enable": true
+            },
+            "justMyCode": false
+        },
     ]
   }
   
