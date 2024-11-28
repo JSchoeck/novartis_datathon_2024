@@ -1,0 +1,31 @@
+c7*6-MS$B@SRz]i
+
+Not enough data -> cold start
+
+we have a lot of data of past info
+
+using all data of past data, predict future target data / costs 
+
+pieces of data are "vectors"
+
+we want to find the other pieces of data that are most similar past datapoints and then predict future
+
+OR can also use mean or nearest neighbour calculations
+
+NIXTLA using masking
+
+cold start - back testing - true backtesting if possible if possible use true cold testing
+
+
+How to go about creating this cold case:
+
+-get raw data - train raw + test raw (submission?)
+-filter data
+-ascribe meta-data columns
+-normalize target value? (make it try and reach 1?)
+-consider special treatment for negative values
+-remove / stop including weird or unnecessary data remove duplicates
+-train?
+-models to use potentially: Overall Mean, XGBoost, CatBoost, 
+-cluster_nl + date is unique ID for a row - can remove duplicates i think
+

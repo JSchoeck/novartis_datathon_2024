@@ -23,7 +23,7 @@ lightgbm = "^4.5"
 matplotlib = "^3.9"
 # meteostat ="^1.6"
 numba = "<0.61"
-numpy = "^2.0"
+numpy = ">=1.16.0,<2.0"
 # openpyxl = { version = "^3.1.2", optional = true }
 pandas = { version = "^2.2", extras = ["feather"] }
 pyyaml = "^6.0.2"
@@ -37,6 +37,14 @@ streamlit = "^1.40"
 tqdm = "^4.67"
 xgboost = "^2.1"
 neuralforecast = "^1.7.6"
+plotly = "^5.24.1"
+nbformat = "^5.10.4"
+pyarrow = "^18.1.0"
+fastparquet = "^2024.11.0"
+statsforecast = "^2.0.0"
+mlforecast = "^0.15.0"
+black = "^24.10.0"
+catboost = "^1.2.7"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29"
