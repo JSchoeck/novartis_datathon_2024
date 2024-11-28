@@ -115,8 +115,32 @@ def load_data() -> dict[str, Any]:
     return {"example_data": example_data}
 
 
-def load_data_to_streamlit() -> None:
-    """Load data to Streamlit."""
-    logging = get_logger(level="auto")
-    ss.data_input = load_data()
-    logging.debug("Data loaded to Streamlit.")
+def predict_submission_data(model) -> pd.DataFrame:
+    logging.info("Loading submission data...")
+    root = Path.cwd()
+    submission_file = root.joinpath("data/input/submission_data.csv")
+    # submission_data = pd.read_parquet(PATH / "submission_data.csv")
+    submission = pd.read_csv(submission_file)
+    logging.info("Adding predictions to submission data.")
+    if model is None:
+        logging.warning("Model not provided. Using placeholder.")
+        submission["prediction"] = 1
+    # Fill in 'prediction' values of submission
+    submission["prediction"] = model.predict(submission[features])  # TODO: "features" needs to be defined, maybe just using all columns anyway, so features = submission.columns?
+    return submission
+
+
+def save_submission_file(submission: pd.DataFrame, attempt: int = 1) -> None:
+    # TODO: find the next number for revision in the folder that does not yet exist
+    root = Path.cwd()
+    submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
+    while submission_file.exists():
+        submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
+        attempt += 1
+    logging.info(f"Saving submission file to {submission_file!s}")
+    submission.to_csv(submission_file, sep=",", index=False)
+
+
+if __name__ == "__main__":
+    df_submission = predict_submission_data(None)
+    save_submission_file(df_submission)
