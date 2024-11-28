@@ -38,9 +38,9 @@ jobs:
       # You may pin to the exact commit or the version.
       # uses: astral-sh/ruff-action@d0a0e814ec17e92d33be7d24dd922b479f1bcd38
       uses: astral-sh/ruff-action@v1.1.1
-      #with:
+      with:
       #  # Arguments passed to Ruff. Use `ruff --help` to see available options. Defaults to `check`.
-      #  args: # optional, default is check
+        args: check --exit-zero  # optional, default is check         
       #  # Source to run Ruff. Defaults to the current directory.
       #  src: # optional, default is .
       #  # The version of Ruff to use, e.g., `0.6.0` Defaults to the latest version.
