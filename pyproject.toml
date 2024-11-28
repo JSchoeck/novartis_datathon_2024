@@ -36,6 +36,7 @@ streamlit = "^1.40"
 # tenacity = "^8.2"
 tqdm = "^4.67"
 xgboost = "^2.1"
+neuralforecast = "^1.7.6"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29"
