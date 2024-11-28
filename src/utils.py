@@ -5,23 +5,6 @@ from typing import Any, Literal
 
 import pandas as pd
 import yaml
-from pathlib import Path
-import xgboost as xgb
-from sklearn.metrics import (
-    mean_squared_error,
-    mean_absolute_error,
-    root_mean_squared_error,
-)
-import numpy as np
-from IPython.core.getipython import get_ipython
-from plotly.subplots import make_subplots
-
-from catboost import CatBoostRegressor
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.express as px
-from pathlib import Path
 
 
 class ColorFormatter(logging.Formatter):
@@ -118,31 +101,31 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         return yaml.safe_load(file)
 
 
-def load_data() -> dict[str, Any]:
+def load_data(kind: Literal["train", "predict"]) -> pd.DataFrame:
     """Load data."""
     logging = get_logger(level="auto")
-    root = Path.cwd()
-
-    example_file = root.joinpath("data/input/example.csv")
-    logging.info(f"Loading data from {example_file!s}")
-    example_data = pd.read_csv(example_file)
+    path = Path.cwd().joinpath("data/input")
+    match kind:
+        case "train":
+            file = path.joinpath("train_data.csv")
+        case "predict":
+            file = path.joinpath("submission_data.csv")
+    logging.info(f"Loading {kind} data from {file!s}")
+    data = pd.read_csv(file)
     logging.debug("Data loaded successfully.")
+    return data
 
-    return {"example_data": example_data}
 
-
-def predict_submission_data(model) -> pd.DataFrame:
-    logging.info("Loading submission data...")
-    root = Path.cwd()
-    submission_file = root.joinpath("data/input/submission_data.csv")
-    # submission_data = pd.read_parquet(PATH / "submission_data.csv")
-    submission = pd.read_csv(submission_file)
+def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:  # noqa: ANN401
+    submission = load_data("predict")
     logging.info("Adding predictions to submission data.")
     if model is None:
         logging.warning("Model not provided. Using placeholder.")
         submission["prediction"] = 1
-    # Fill in 'prediction' values of submission
-    #submission["prediction"] = model.predict(submission[features])  # TODO: "features" needs to be defined, maybe just using all columns anyway, so features = submission.columns?
+    elif features is not None:
+        submission["prediction"] = model.predict(submission[features])
+    else:
+        submission["prediction"] = model.predict(submission.drop(columns=["target"]))
     return submission
 
 
