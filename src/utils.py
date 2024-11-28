@@ -5,7 +5,23 @@ from typing import Any, Literal
 
 import pandas as pd
 import yaml
-from streamlit import session_state as ss
+from pathlib import Path
+import xgboost as xgb
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    root_mean_squared_error,
+)
+import numpy as np
+from IPython.core.getipython import get_ipython
+from plotly.subplots import make_subplots
+
+from catboost import CatBoostRegressor
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
+from pathlib import Path
 
 
 class ColorFormatter(logging.Formatter):
@@ -126,7 +142,7 @@ def predict_submission_data(model) -> pd.DataFrame:
         logging.warning("Model not provided. Using placeholder.")
         submission["prediction"] = 1
     # Fill in 'prediction' values of submission
-    submission["prediction"] = model.predict(submission[features])  # TODO: "features" needs to be defined, maybe just using all columns anyway, so features = submission.columns?
+    #submission["prediction"] = model.predict(submission[features])  # TODO: "features" needs to be defined, maybe just using all columns anyway, so features = submission.columns?
     return submission
 
 
