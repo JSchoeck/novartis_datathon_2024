@@ -6,6 +6,8 @@ from typing import Any, Literal
 import pandas as pd
 import yaml
 
+from models.models import Naive
+
 
 class ColorFormatter(logging.Formatter):
     """Logging colored formatter."""
@@ -117,12 +119,10 @@ def load_data(kind: Literal["train", "predict"]) -> pd.DataFrame:
 
 
 def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:  # noqa: ANN401
+    logging = get_logger(level="auto")
     submission = load_data("predict")
     logging.info("Adding predictions to submission data.")
-    if model is None:
-        logging.warning("Model not provided. Using placeholder.")
-        submission["prediction"] = 1
-    elif features is not None:
+    if features is not None:
         submission["prediction"] = model.predict(submission[features])
     else:
         submission["prediction"] = model.predict(submission.drop(columns=["target"]))
@@ -130,7 +130,7 @@ def predict_submission_data(model: Any, features: list[str] | None = None) -> pd
 
 
 def save_submission_file(submission: pd.DataFrame, attempt: int = 1) -> None:
-    # TODO: find the next number for revision in the folder that does not yet exist
+    logging = get_logger(level="auto")
     root = Path.cwd()
     submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
     while submission_file.exists():
@@ -141,5 +141,5 @@ def save_submission_file(submission: pd.DataFrame, attempt: int = 1) -> None:
 
 
 if __name__ == "__main__":
-    df_submission = predict_submission_data(None)
+    df_submission = predict_submission_data(Naive())
     save_submission_file(df_submission)
