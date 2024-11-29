@@ -34,7 +34,7 @@ class ColorFormatter(logging.Formatter):
             logging.CRITICAL: self.bold_red + self.fmt + self.reset,
         }
 
-    def format(self, record):  # noqa: ANN201, D102, ANN001
+    def format(self, record):  # noqa: ANN201, ANN001
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
@@ -141,9 +141,8 @@ def predict_submission_data(model: Any, features: list[str] | None = None) -> pd
     return submission
 
 
-def save_submission_file(submission: pd.DataFrame, attempt: int = 1) -> None:
+def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path = Path.cwd()) -> None:
     logging = get_logger(level="auto")
-    root = Path.cwd()
     submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
     while submission_file.exists():
         submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
@@ -160,6 +159,26 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     # df["dayofweek"] = df["date"].dt.dayofweek
     df["weekofyear"] = df["date"].dt.isocalendar().week
     return df
+
+
+def identify_future_launches(df_train: pd.DataFrame, df_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Identify future launches.
+
+    Future launches are all cluster_nl that occurr in the test set, but not in the training set. Since the test set is chronologically after the training set, we can identify future launches by checking if the cluster_nl is in the test set, but not in the training set.
+    """
+    logging = get_logger(level="auto")
+    future_launches = set(set(df_test["cluster_nl"].unique()) - set(df_train["cluster_nl"].unique()))
+    recent_launches = set(set(df_train["cluster_nl"].unique()) - set(df_test["cluster_nl"].unique()))
+    logging.info(f"Identified {len(future_launches):,} future and {len(recent_launches):,} recent launches.")
+    df_train["zero_actuals"] = False
+    # set zero_actuals to True in df_test for all future launches
+    df_test["zero_actuals"] = False
+    df_test.loc[df_test["cluster_nl"].isin(future_launches), "zero_actuals"] = True
+    logging.info(f"Future launches have {df_test['zero_actuals'].sum():,} rows in the test set.")
+    logging.info(
+        f"Recent launches have {df_test['zero_actuals'].count()-df_test['zero_actuals'].sum():,} rows in the test set."
+    )
+    return df_train, df_test
 
 
 # def evaluate(model, X, y, cv, model_prop=None, model_step=None) -> None:
