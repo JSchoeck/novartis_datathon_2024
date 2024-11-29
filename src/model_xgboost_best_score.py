@@ -115,6 +115,7 @@ for idx in all_splits:
     X_test, y_test = df_features.iloc[idx[1]].copy(), s_target.iloc[idx[1]]
     # predict
     X_test.loc[:, "prediction"] = xgb_model.predict(X_test[selected_features])
+    # Add columns
     # NOTE: required for metric calculation are ["cluster_nl", "date", "target", "prediction", "zero_actuals"]
     # TODO: check if indexing is correct for the following columns ["cluster_nl", "date", "target", "zero_actuals"]
     if "cluster_nl" not in X_test.columns:
@@ -123,14 +124,15 @@ for idx in all_splits:
         X_test.loc[idx[1], "date"] = df_train["date"].loc[idx[1]]
     if "target" not in X_test.columns:
         X_test.loc[idx[1], "target"] = s_target.loc[idx[1]]
-    # TODO: check if zero_actuals is correctly set, or if it should be True for NaN values maybe?
-    X_test.loc[:, "zero_actuals"] = False
-    X_test.loc[X_test["target"] == 0, "zero_actuals"] = True
-    print("CYME:", cyme := helper.compute_metric(X_test))
-    cymes.append(cyme)
+    X_train, X_test = utils.identify_future_launches(X_train, X_test)
+    X_test.loc[X_test.index, "zero_actuals"] = X_test["zero_actuals"]
+    # Score
+    cyme_score = helper.compute_metric(X_test)
+    cymes.append(cyme_score)
     metric_recent, metric_future = helper.compute_metric_terms(X_test)
+    print("CYME:", cyme_score)
     print("CYME Recent Launches:", metric_recent)
-    print("CYME Future Launches:", metric_future, "\n")
+    print("CYME Future Launches:", metric_future)
 print("---\nMean CYME:", round(sum(cymes) / len(cymes), 3), "\n---")
 
 # # %%
@@ -207,6 +209,6 @@ submission[categorical_features] = submission[categorical_features].astype(
 )
 
 submission["prediction"] = xgb_model.predict(submission[selected_features])
-utils.save_submission_file(submission)  # NOTE: Uncomment to save submission file
+# utils.save_submission_file(submission)  # NOTE: Uncomment to save submission file
 
 # %%
