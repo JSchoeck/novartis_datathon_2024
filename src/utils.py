@@ -130,7 +130,7 @@ def load_data(kind: Literal["train", "train_sample", "predict"]) -> pd.DataFrame
     return data
 
 
-def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:
+def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:  # noqa: ANN401
     logging = get_logger(level="auto")
     submission = load_data("predict")
     logging.info("Adding predictions to submission data.")
@@ -141,7 +141,9 @@ def predict_submission_data(model: Any, features: list[str] | None = None) -> pd
     return submission
 
 
-def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path = Path.cwd()) -> None:
+def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path | None = None) -> None:
+    if root is None:
+        root = Path.cwd()
     logging = get_logger(level="auto")
     submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
     while submission_file.exists():
