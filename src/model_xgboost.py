@@ -11,15 +11,11 @@
 
 # %%
 import multiprocessing
+from pathlib import Path
 
 import xgboost as xgb
 from IPython.display import display
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_squared_error,
-    root_mean_squared_error,
-)
-from sklearn.model_selection import TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
 
 import helper
@@ -88,57 +84,128 @@ print(s_target.dtypes, s_target.shape, "\n")
 print(df_features.dtypes, df_features.shape)
 display(df_features.head(3))
 
-# %%
-ts_cv = TimeSeriesSplit(gap=0, n_splits=5)
-all_splits = list(
-    ts_cv.split(
-        df_features,
-        s_target,
-    )
-)
-print("Splits:", len(all_splits))
 
 # %%
 xgb_model = XGBRegressor(
     enable_categorical=True,
     tree_method="hist",
-    max_depth=5,  # higher number takes much longer top run. 5 or 6 is good for quick checks
-    n_estimators=50,
+    max_depth=6,  # higher number takes much longer top run. 5 or 6 is good for quick checks
+    n_estimators=100,
     max_cat_threshold=1000,
     n_jobs=multiprocessing.cpu_count() - 1,
 )
 
+
 # %%
-scores = []
-cymes = []
-for idx in all_splits:
-    print(df_train["date"].iloc[idx[0][0]], "to", df_train["date"].iloc[idx[0][-1]])
+# Cell with TimeSeriesSplit
 
-    X_train, y_train = df_features.iloc[idx[0]], s_target.iloc[idx[0]]
-    xgb_model.fit(X_train, y_train)
-    X_test, y_test = df_features.iloc[idx[1]].copy(), s_target.iloc[idx[1]]
+# ts_cv = TimeSeriesSplit(gap=0, n_splits=5)
+# all_splits = list(
+#     ts_cv.split(
+#         df_features,
+#         s_target,
+#     )
+# )
+# print("Splits:", len(all_splits))
 
-    # print(score := xgb_model.score(X_test, y_test))
-    # scores.append(score)
+# %%
+# scores = []
+# cymes = []
+# for idx in all_splits:
+#     print(df_train["date"].iloc[idx[0][0]], "to", df_train["date"].iloc[idx[0][-1]])
+#     # fit
+#     X_train, y_train = df_features.iloc[idx[0]], s_target.iloc[idx[0]]
+#     xgb_model.fit(X_train, y_train)
+#     X_test, y_test = df_features.iloc[idx[1]].copy(), s_target.iloc[idx[1]]
+#     # predict
+#     X_test.loc[:, "prediction"] = xgb_model.predict(X_test[selected_features])
+#     # NOTE: required for metric calculation are ["cluster_nl", "date", "target", "prediction", "zero_actuals"]
+#     # TODO: check if indexing is correct for the following columns ["cluster_nl", "date", "target", "zero_actuals"]
+#     if "cluster_nl" not in X_test.columns:
+#         X_test.loc[idx[1], "cluster_nl"] = df_train["cluster_nl"].loc[idx[1]]
+#     if "date" not in X_test.columns:
+#         X_test.loc[idx[1], "date"] = df_train["date"].loc[idx[1]]
+#     if "target" not in X_test.columns:
+#         X_test.loc[idx[1], "target"] = s_target.loc[idx[1]]
+#     # TODO: set
+#     X_train, X_test = utils.identify_future_launches(X_train, X_test)
+#     df_pred.loc[X_train.index, "zero_actuals"] = X_train["zero_actuals"]
+#     df_pred.loc[X_test.index, "zero_actuals"] = X_test["zero_actuals"]
 
-    X_test.loc[:, "prediction"] = xgb_model.predict(X_test[selected_features])
-    # NOTE: required for metric calculation are ["cluster_nl", "date", "target", "prediction", "zero_actuals"]
-    # TODO: check if indexing is correct for the following columns ["cluster_nl", "date", "target", "zero_actuals"]
-    if "cluster_nl" not in X_test.columns:
-        X_test.loc[idx[1], "cluster_nl"] = df_train["cluster_nl"].loc[idx[1]]
-    if "date" not in X_test.columns:
-        X_test.loc[idx[1], "date"] = df_train["date"].loc[idx[1]]
-    if "target" not in X_test.columns:
-        X_test.loc[idx[1], "target"] = s_target.loc[idx[1]]
-    # TODO: check if zero_actuals is correctly set, or if it should be True for NaN values maybe?
-    X_test.loc[:, "zero_actuals"] = False
-    X_test.loc[X_test["target"] == 0, "zero_actuals"] = True
-    print("CYME:", cyme := helper.compute_metric(X_test))
-    cymes.append(cyme)
-    metric_recent, metric_future = helper.compute_metric_terms(X_test)
-    print("CYME Recent Launches:", metric_recent)
-    print("CYME Future Launches:", metric_future, "\n")
-print("---\nMean CYME:", round(sum(cymes) / len(cymes), 3), "\n---")
+#     # X_test.loc[:, "zero_actuals"] = False
+#     # X_test.loc[X_test["date"] < df_features.iloc[idx[1]]["launch_date"], "zero_actuals"] = True
+#     print("CYME:", cyme := helper.compute_metric(X_test))
+#     cymes.append(cyme)
+#     metric_recent, metric_future = helper.compute_metric_terms(X_test)
+#     print("CYME Recent Launches:", metric_recent)
+#     print("CYME Future Launches:", metric_future, "\n")
+# print("---\nMean CYME:", round(sum(cymes) / len(cymes), 3), "\n---")
+
+
+# %%
+# Cell with GridSearchCV
+
+# Define the parameters to search
+# param_grid = {
+#     "max_depth": [4, 8, 12],
+#     "n_estimators": [50, 100, 200],
+#     "learning_rate": [0.05, 0.1, 0.2]
+# }
+# param_grid = {"max_depth": [4, 6], "n_estimators": [50, 100], "learning_rate": [0.1]}
+
+# cyme_scorer = helper.cyme_scorer()
+# grid_search = GridSearchCV(
+#     estimator=xgb_model,
+#     param_grid=param_grid,
+#     # scoring=cyme_scorer,
+#     cv=ts_cv,
+#     verbose=1,
+#     n_jobs=multiprocessing.cpu_count() - 1,
+# )
+# grid_search.fit(df_features, s_target)
+# print("Best parameters found: ", grid_search.best_params_)
+# print("Best score: ", grid_search.best_score_)
+
+# %%
+# Use the best estimator to make predictions
+# best_model = grid_search.best_estimator_
+best_model = XGBRegressor(
+    enable_categorical=True,
+    tree_method="hist",
+    max_depth=12,  # 4 for dev, 12 for submit
+    n_estimators=200,
+    max_cat_threshold=1000,
+    n_jobs=multiprocessing.cpu_count() - 1,
+)
+
+# Split data into train and test set
+test_year = 2022
+# TODO: loop over all possible years to find the best year to split / lowest CYME score
+
+X_train, y_train = df_features[df_features["year"] < test_year], s_target[df_features["year"] < test_year]
+X_test, y_test = df_features[df_features["year"] >= test_year], s_target[df_features["year"] >= test_year]
+
+# Fit model on train set
+best_model.fit(X_train, y_train)
+
+# Predict and evaluate
+df_pred = df_features.copy()
+df_pred["prediction"] = best_model.predict(df_pred)
+df_pred["date"] = df_train["date"]
+df_pred["target"] = df_train["target"]
+X_train, X_test = utils.identify_future_launches(X_train, X_test)
+df_pred.loc[X_train.index, "zero_actuals"] = X_train["zero_actuals"]
+df_pred.loc[X_test.index, "zero_actuals"] = X_test["zero_actuals"]
+
+cyme_score = helper.compute_metric(df_pred)
+metric_recent, metric_future = helper.compute_metric_terms(df_pred)
+
+print("Test year:", test_year)
+print("CYME:", cyme_score)
+print("CYME Recent Launches:", metric_recent)
+print("CYME Future Launches:", metric_future)
+
+xgb_model = best_model
 
 
 # %%
@@ -150,4 +217,7 @@ submission[categorical_features] = submission[categorical_features].astype(
 )
 
 submission["prediction"] = xgb_model.predict(submission[selected_features])
-# utils.save_submission_file(submission) # NOTE: Uncomment to save submission file
+root = Path.cwd().parent
+utils.save_submission_file(submission, root=root)  # NOTE: Uncomment to save submission file
+
+# %%
