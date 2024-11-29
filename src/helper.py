@@ -5,12 +5,12 @@ This auxiliar file is intended to be used by participants in case
 you want to test the metric with your own train/validation splits.
 """
 
-# from typing import Tuple
-
-from pathlib import Path
-
 import pandas as pd
-from models.models import XgBoost
+
+# from typing import Tuple
+# from pathlib import Path
+# from models.models import XgBoost
+
 
 def _CYME(df: pd.DataFrame) -> float:  # noqa: N802
     """Compute the CYME metric, that is 1/2(median(yearly error) + median(monthly error))."""
@@ -56,71 +56,71 @@ def compute_metric(submission: pd.DataFrame) -> float:
     return _metric(submission)
 
 
-if __name__ == "__main__":
-    # Load data
-    root = Path.cwd()
+# if __name__ == "__main__":
+#     # Load data
+#     root = Path.cwd()
 
-    PATH = root.joinpath("data/input")
-    train_data_unfiltered = pd.read_csv(PATH / "train_data.csv", parse_dates=["launch_date", "date"])
+#     PATH = root.joinpath("data/input")
+#     train_data_unfiltered = pd.read_csv(PATH / "train_data.csv", parse_dates=["launch_date", "date"])
 
-    # Split into train and validation set
-    split_date = "2021-01-10"
-    split_date_and_one = "2021-01-11"
-    train_data_unfiltered["launch_date"] = pd.to_datetime(train_data_unfiltered["launch_date"])
+#     # Split into train and validation set
+#     split_date = "2021-01-10"
+#     split_date_and_one = "2021-01-11"
+#     train_data_unfiltered["launch_date"] = pd.to_datetime(train_data_unfiltered["launch_date"])
 
-    train_data_unfiltered["launch_day"] = train_data_unfiltered["launch_date"].dt.day
-    train_data_unfiltered["launch_month"] = train_data_unfiltered["launch_date"].dt.month
-    train_data_unfiltered["launch_year"] = train_data_unfiltered["launch_date"].dt.year
+#     train_data_unfiltered["launch_day"] = train_data_unfiltered["launch_date"].dt.day
+#     train_data_unfiltered["launch_month"] = train_data_unfiltered["launch_date"].dt.month
+#     train_data_unfiltered["launch_year"] = train_data_unfiltered["launch_date"].dt.year
 
-    sorted_train_data = train_data_unfiltered.sort_values("launch_date")
-    train_data = sorted_train_data.iloc[:99999, :]
-    validation = sorted_train_data.iloc[100000:, :]
+#     sorted_train_data = train_data_unfiltered.sort_values("launch_date")
+#     train_data = sorted_train_data.iloc[:99999, :]
+#     validation = sorted_train_data.iloc[100000:, :]
 
-    # Train your model
-    category_features = [
-        "brand",
-        "corporation",
-        "country",
-        "drug_id",
-        "indication",
-        "therapeutic_area",
-    ]  # categories that are not numerical
-    num_features = [
-        "launch_day",
-        "launch_month",
-        "launch_year",
-        "che_pc_usd",
-        "che_perc_gdp",
-        "insurance_perc_che",
-        "population",
-        "prev_perc",
-        "price_month",
-        "price_unit",
-        "public_perc_che",
-    ]
-    features = category_features + num_features
-    xgbooster = XgBoost()
-    # Perform predictions on validation set
-    validation["prediction"] = xgbooster.predict(train_data, validation, num_features, category_features)
+#     # Train your model
+#     category_features = [
+#         "brand",
+#         "corporation",
+#         "country",
+#         "drug_id",
+#         "indication",
+#         "therapeutic_area",
+#     ]  # categories that are not numerical
+#     num_features = [
+#         "launch_day",
+#         "launch_month",
+#         "launch_year",
+#         "che_pc_usd",
+#         "che_perc_gdp",
+#         "insurance_perc_che",
+#         "population",
+#         "prev_perc",
+#         "price_month",
+#         "price_unit",
+#         "public_perc_che",
+#     ]
+#     features = category_features + num_features
+#     xgbooster = XgBoost()
+#     # Perform predictions on validation set
+#     validation["prediction"] = xgbooster.predict(train_data, validation, num_features, category_features)
 
-    # Assign column ["zero_actuals"] in the depending if in your
-    # split the cluster_nl has already had actuals on train or not
+#     # Assign column ["zero_actuals"] in the depending if in your
+#     # split the cluster_nl has already had actuals on train or not
 
-    validation["zero_actuals"] = False  # unsure what this is, nan if true for prediction
+#     validation["zero_actuals"] = False  # unsure what this is, nan if true for prediction
 
-    # Optionally check performance
-    print("Performance:", compute_metric(validation))
+#     # Optionally check performance
+#     print("Performance:", compute_metric(validation))
 
-    # #Prepare submission
-    # submission_data = pd.read_parquet(PATH / "submission_data.csv")
-    # submission = pd.read_csv(PATH / "submission_template.csv")
+#     # #Prepare submission
+#     # submission_data = pd.read_parquet(PATH / "submission_data.csv")
+#     # submission = pd.read_csv(PATH / "submission_template.csv")
 
-    # # Fill in 'prediction' values of submission
-    # submission["prediction"] = #model.predict(submission_data[features])
+#     # # Fill in 'prediction' values of submission
+#     # submission["prediction"] = #model.predict(submission_data[features])
 
-    # # ...
+#     # # ...
 
-    # # Save submission
-    # SAVE_PATH = Path("path/to/save/folder")
-    # ATTEMPT = "attempt_x"
-    # submission.to_csv(SAVE_PATH / f"submission_{ATTEMPT}.csv", sep=",", index=False)
+#     # # Save submission
+#     # SAVE_PATH = Path("path/to/save/folder")
+#     # ATTEMPT = "attempt_x"
+#     # submission.to_csv(SAVE_PATH / f"submission_{ATTEMPT}.csv", sep=",", index=False)
