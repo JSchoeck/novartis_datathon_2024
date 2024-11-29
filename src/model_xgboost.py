@@ -172,8 +172,8 @@ xgb_model = XGBRegressor(
 best_model = XGBRegressor(
     enable_categorical=True,
     tree_method="hist",
-    max_depth=12,  # 4 for dev, 12 for submit
-    n_estimators=200,
+    max_depth=5,  # 4 for dev, 12 for submit
+    n_estimators=100,
     max_cat_threshold=1000,
     n_jobs=multiprocessing.cpu_count() - 1,
 )
@@ -189,13 +189,12 @@ X_test, y_test = df_features[df_features["year"] >= test_year], s_target[df_feat
 best_model.fit(X_train, y_train)
 
 # Predict and evaluate
-df_pred = df_features.copy()
+df_pred = X_test.copy()
 df_pred["prediction"] = best_model.predict(df_pred)
 df_pred["date"] = df_train["date"]
 df_pred["target"] = df_train["target"]
-X_train, X_test = utils.identify_future_launches(X_train, X_test)
-df_pred.loc[X_train.index, "zero_actuals"] = X_train["zero_actuals"]
-df_pred.loc[X_test.index, "zero_actuals"] = X_test["zero_actuals"]
+X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
+df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
 
 cyme_score = helper.compute_metric(df_pred)
 metric_recent, metric_future = helper.compute_metric_terms(df_pred)
