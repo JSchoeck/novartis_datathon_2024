@@ -43,6 +43,7 @@ pyarrow = "^18.1.0"
 statsforecast = "^2.0.0"
 mlforecast = "^0.15.0"
 catboost = "^1.2.7"
+darts = "^0.31.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29"
@@ -74,14 +75,13 @@ exclude = ["**/site-packages/**"]
 pythonVersion = "3.11"
 typeCheckingMode = "standard"
 
-
 [tool.ruff.format]
 docstring-code-format = true
 quote-style = "double"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "D", "Q", "W", "I", "N", "ANN", "COM", "C4", "EM", "PT", "SIM", "RUF", "NPY", "TRY", "PLW", "PLE", "PLC", "PLR", "PD"]
-ignore = ["E501", "D100", "D103", "D206", "D300", "D104", "N803", "N806", "PD901", "RUF005", "E712", "COM812", "COM819", "E111", "E114", "E117", "W191", "ANN101"]
+ignore = ["E501", "D100", "D101", "D102", "D103", "D206", "D300", "D104", "N803", "N806", "PD901", "RUF005", "E712", "COM812", "COM819", "E111", "E114", "E117", "W191", "ANN101", "F401"]
 unfixable = ["F401", "F841"]
 task-tags = ["TODO", "BUG", "NOTE"]
 
