@@ -5,16 +5,20 @@ This auxiliar file is intended to be used by participants in case
 you want to test the metric with your own train/validation splits.
 """
 
-import pandas as pd
-
 # from typing import Tuple
 # from pathlib import Path
 # from models.models import XgBoost
+import warnings
+
+import pandas as pd
+
+warnings.filterwarnings("ignore", category=RuntimeWarning, message="Mean of empty slice")
 
 
 def _CYME(df: pd.DataFrame) -> float:  # noqa: N802
     """Compute the CYME metric, that is 1/2(median(yearly error) + median(monthly error))."""
-    yearly_agg = df.groupby("cluster_nl")[["target", "prediction"]].sum().reset_index()
+    # TODO: check with mentors if observed=False is correct
+    yearly_agg = df.groupby("cluster_nl", observed=False)[["target", "prediction"]].sum().reset_index()
     yearly_error = abs((yearly_agg["target"] - yearly_agg["prediction"]) / yearly_agg["target"]).median()
 
     monthly_error = abs((df["target"] - df["prediction"]) / df["target"]).median()
@@ -43,6 +47,22 @@ def _metric(df: pd.DataFrame) -> float:
     return round(recent_weight * _CYME(recent) + zeros_weight * min(1, _CYME(zeros)), 8)
 
 
+def _metric_terms(df: pd.DataFrame) -> tuple[(float, float)]:
+    """Compute single terms of metric.
+
+    :param df: Dataframe with target and 'prediction', and identifiers.
+    :return: Performance metric for recent and future launches
+    """
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+
+    # Split 0 actuals - rest
+    zeros = df[df["zero_actuals"] == 1]
+    recent = df[df["zero_actuals"] == 0]
+
+    return round(_CYME(recent), 8), round(min(1, _CYME(zeros)), 8)
+
+
 # def compute_metric(submission: pd.DataFrame) -> Tuple[float, float]:
 def compute_metric(submission: pd.DataFrame) -> float:
     """Compute metric.
@@ -54,6 +74,18 @@ def compute_metric(submission: pd.DataFrame) -> float:
     submission = submission[["cluster_nl", "date", "target", "prediction", "zero_actuals"]]
 
     return _metric(submission)
+
+
+def compute_metric_terms(submission: pd.DataFrame) -> tuple[float, float]:
+    """Compute single terms of metric.
+
+    :param submission: Prediction. Requires columns: ['cluster_nl', 'date', 'target', 'prediction']
+    :return: Performance metric for recent and future launches.
+    """
+    submission["date"] = pd.to_datetime(submission["date"])
+    submission = submission[["cluster_nl", "date", "target", "prediction", "zero_actuals"]]
+
+    return _metric_terms(submission)
 
 
 # if __name__ == "__main__":

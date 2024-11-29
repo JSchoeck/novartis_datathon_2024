@@ -1,16 +1,26 @@
 # %%
+# import warnings
+
+
+# def custom_warning_handler(message, category, filename, lineno, file=None, line=None):
+#     if not issubclass(category, FutureWarning):
+#         breakpoint()
+#         warnings.showwarning(message, category, filename, lineno, file, line)
+
+# warnings.showwarning = custom_warning_handler
+
+# %%
 import multiprocessing
 
+import xgboost as xgb
 from IPython.display import display
-from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import (
-    mean_squared_error,
     mean_absolute_error,
+    mean_squared_error,
     root_mean_squared_error,
 )
+from sklearn.model_selection import TimeSeriesSplit
 from xgboost import XGBRegressor
-import xgboost as xgb
-
 
 import helper
 import utils
@@ -42,15 +52,15 @@ df_features = df_train.copy()
 df_features = utils.add_date_features(df_features)
 
 potential_corr_features = [
-    # "cluster_nl", 
-    # "corporation", 
-    # "drug_id", 
-    # "ind_launch_date", 
-    # "launch_date", 
+    # "cluster_nl",
+    # "corporation",
+    # "drug_id",
+    # "ind_launch_date",
+    # "launch_date",
     # "date",
     # "country",
     # "indication"
-    ]
+]
 categorical_features = [
     "brand",
     "cluster_nl",
@@ -61,7 +71,7 @@ categorical_features = [
     "therapeutic_area",
 ]
 
-#date_features = ["day", "week_of_year", "month", "year"]
+# date_features = ["day", "week_of_year", "month", "year"]
 
 numerical_features = list(df_features.select_dtypes(include=["number"]).drop(columns=["target"]).columns)
 
@@ -92,7 +102,7 @@ print("Splits:", len(all_splits))
 xgb_model = XGBRegressor(
     enable_categorical=True,
     tree_method="hist",
-    max_depth=5, # higher number takes much longer top run. 5 or 6 is good for quick checks
+    max_depth=5,  # higher number takes much longer top run. 5 or 6 is good for quick checks
     n_estimators=50,
     max_cat_threshold=1000,
     n_jobs=multiprocessing.cpu_count() - 1,
@@ -123,10 +133,11 @@ for idx in all_splits:
     # TODO: check if zero_actuals is correctly set, or if it should be True for NaN values maybe?
     X_test.loc[:, "zero_actuals"] = False
     X_test.loc[X_test["target"] == 0, "zero_actuals"] = True
-    print("CYME:", cyme := helper.compute_metric(X_test), "\n")
+    print("CYME:", cyme := helper.compute_metric(X_test))
     cymes.append(cyme)
-
-# print("Mean score:", round(sum(scores) / len(scores), 3))
+    metric_recent, metric_future = helper.compute_metric_terms(X_test)
+    print("CYME Recent Launches:", metric_recent)
+    print("CYME Future Launches:", metric_future, "\n")
 print("---\nMean CYME:", round(sum(cymes) / len(cymes), 3), "\n---")
 
 
