@@ -3,10 +3,14 @@ import os
 from pathlib import Path
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 import yaml
+from sklearn.model_selection import cross_validate
 
-from models.models import Naive
+pd.set_option("display.max_columns", 100)
+pd.set_option("display.width", 200)
+pd.options.mode.copy_on_write = True
 
 
 class ColorFormatter(logging.Formatter):
@@ -97,28 +101,36 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
     """
     logging = get_logger(level="auto")
     if path is None:
-        path = Path.cwd().joinpath("settings.yaml")
+        path = Path.cwd()
+        if path.name == "src":
+            path = path.parent
+        path = path.joinpath("settings.yaml")
     logging.debug(f"Loading settings from {path.name!s}")
     with open(path, "r") as file:
         return yaml.safe_load(file)
 
 
-def load_data(kind: Literal["train", "predict"]) -> pd.DataFrame:
+def load_data(kind: Literal["train", "train_sample", "predict"]) -> pd.DataFrame:
     """Load data."""
     logging = get_logger(level="auto")
-    path = Path.cwd().joinpath("data/input")
+    path = Path.cwd()
+    if path.name == "src":
+        path = path.parent
+    path = path.joinpath("data/input")
     match kind:
-        case "train":
+        case "train" | "train_sample":
             file = path.joinpath("train_data.csv")
         case "predict":
             file = path.joinpath("submission_data.csv")
     logging.info(f"Loading {kind} data from {file!s}")
     data = pd.read_csv(file)
-    logging.debug("Data loaded successfully.")
+    if kind == "train_sample":
+        data = data.tail(1000)
+    logging.info(f"Data loaded successfully: {data.shape[0]:,} rows and {data.shape[1]:,} columns.")
     return data
 
 
-def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:  # noqa: ANN401
+def predict_submission_data(model: Any, features: list[str] | None = None) -> pd.DataFrame:
     logging = get_logger(level="auto")
     submission = load_data("predict")
     logging.info("Adding predictions to submission data.")
@@ -140,6 +152,41 @@ def save_submission_file(submission: pd.DataFrame, attempt: int = 1) -> None:
     submission.to_csv(submission_file, sep=",", index=False)
 
 
+def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
+    df["date"] = pd.to_datetime(df["date"])
+    df["year"] = df["date"].dt.year
+    df["month"] = df["date"].dt.month
+    # df["day"] = df["date"].dt.day
+    # df["dayofweek"] = df["date"].dt.dayofweek
+    df["weekofyear"] = df["date"].dt.isocalendar().week
+    return df
+
+
+# def evaluate(model, X, y, cv, model_prop=None, model_step=None) -> None:
+#     cv_results = cross_validate(
+#         model,
+#         X,
+#         y,
+#         cv=cv,
+#         scoring=["neg_mean_absolute_error", "neg_root_mean_squared_error"],
+#         return_estimator=model_prop is not None,
+#     )
+#     if model_prop is not None:
+#         if model_step is not None:
+#             values = [getattr(m[model_step], model_prop) for m in cv_results["estimator"]]
+#         else:
+#             values = [getattr(m, model_prop) for m in cv_results["estimator"]]
+#         print(f"Mean model.{model_prop} = {np.mean(values)}")
+#     mae = -cv_results["test_neg_mean_absolute_error"]
+#     rmse = -cv_results["test_neg_root_mean_squared_error"]
+#     print(
+#         f"Mean Absolute Error:     {mae.mean():.3f} +/- {mae.std():.3f}\n"
+#         f"Root Mean Squared Error: {rmse.mean():.3f} +/- {rmse.std():.3f}"
+#     )
+
+
 if __name__ == "__main__":
+    from models.models import Naive
+
     df_submission = predict_submission_data(Naive())
     save_submission_file(df_submission)
