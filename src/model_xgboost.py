@@ -3,7 +3,14 @@ import multiprocessing
 
 from IPython.display import display
 from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    root_mean_squared_error,
+)
 from xgboost import XGBRegressor
+import xgboost as xgb
+
 
 import helper
 import utils
@@ -13,15 +20,37 @@ P = utils.load_settings()["params"]
 
 # %%
 df_train = utils.load_data("train")
-df_train.head(3)
 
+# %%
+
+# split up indication values  - did not seem to increase (lower) score
+# new_indication = []
+# for ind in df_train.indication:
+#     indications_per_ind = ind.strip("[] ").split(", ")
+#     indication_2 = []
+#     for indication in indications_per_ind:
+#         indication_2.append(indication[1:-1])
+#     new_indication.append(indication_2)
+
+# df_train["indication"] = new_indication
+
+# df_train = df_train.explode("indication",ignore_index=True)
 
 # %%
 df_features = df_train.copy()
 
 df_features = utils.add_date_features(df_features)
 
-potential_corr_features = ["cluster_nl", "corporation", "drug_id", "ind_launch_date", "launch_date", "date"]
+potential_corr_features = [
+    # "cluster_nl", 
+    # "corporation", 
+    # "drug_id", 
+    # "ind_launch_date", 
+    # "launch_date", 
+    # "date",
+    # "country",
+    # "indication"
+    ]
 categorical_features = [
     "brand",
     "cluster_nl",
@@ -31,24 +60,23 @@ categorical_features = [
     "indication",
     "therapeutic_area",
 ]
-# date_feature = ["launch_date", "date", "ind_launch_date"]
-date_features = ["launch_date", "date", "ind_launch_date", "weekofyear", "month", "year"]
+
+#date_features = ["day", "week_of_year", "month", "year"]
 
 numerical_features = list(df_features.select_dtypes(include=["number"]).drop(columns=["target"]).columns)
+
 df_features[categorical_features] = df_features[categorical_features].astype(
     {col: "category" for col in categorical_features}
 )
 
-selected_features = date_features + categorical_features + numerical_features
+selected_features = categorical_features + numerical_features
 selected_features = [feature for feature in selected_features if feature not in potential_corr_features]
 s_target = df_features.pop("target")
-selected_features = numerical_features  # BUG: categorical features are not working for XGBRegressor currently
 df_features = df_features[selected_features]
 
 print(s_target.dtypes, s_target.shape, "\n")
 print(df_features.dtypes, df_features.shape)
 display(df_features.head(3))
-
 
 # %%
 ts_cv = TimeSeriesSplit(gap=0, n_splits=5)
@@ -64,13 +92,11 @@ print("Splits:", len(all_splits))
 xgb_model = XGBRegressor(
     enable_categorical=True,
     tree_method="hist",
-    max_depth=2,
+    max_depth=5, # higher number takes much longer top run. 5 or 6 is good for quick checks
     n_estimators=50,
     max_cat_threshold=1000,
-    # eval_metric = helper._metric,
     n_jobs=multiprocessing.cpu_count() - 1,
 )
-
 
 # %%
 scores = []
@@ -107,5 +133,10 @@ print("---\nMean CYME:", round(sum(cymes) / len(cymes), 3), "\n---")
 # %%
 submission = utils.load_data("predict")
 submission = utils.add_date_features(submission)
+
+submission[categorical_features] = submission[categorical_features].astype(
+    {col: "category" for col in categorical_features}
+)
+
 submission["prediction"] = xgb_model.predict(submission[selected_features])
 # utils.save_submission_file(submission) # NOTE: Uncomment to save submission file
