@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Literal
 
@@ -9,7 +10,7 @@ import yaml
 from sklearn.model_selection import cross_validate
 
 pd.set_option("display.max_columns", 100)
-pd.set_option("display.width", 200)
+pd.set_option("display.width", 250)
 pd.options.mode.copy_on_write = True
 
 
@@ -142,13 +143,15 @@ def predict_submission_data(model: Any, features: list[str] | None = None) -> pd
     return submission
 
 
-def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path | None = None) -> None:
+def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path | None = None, model: str = "") -> None:
+    if model == "":
+        model = Path(sys.argv[0]).stem
     if root is None:
         root = Path.cwd()
     logging = get_logger(level="auto")
-    submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
+    submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}.csv")
     while submission_file.exists():
-        submission_file = root.joinpath(f"data/output/submission_attempt_{attempt}.csv")
+        submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}.csv")
         attempt += 1
     logging.info(f"Saving submission file to {submission_file!s}")
     submission.to_csv(submission_file, sep=",", index=False)
@@ -177,7 +180,7 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     df["month"] = df["date"].dt.month
     # df["day"] = df["date"].dt.day
     # df["dayofweek"] = df["date"].dt.dayofweek
-    df["weekofyear"] = df["date"].dt.isocalendar().week
+    # df["weekofyear"] = df["date"].dt.isocalendar().week
     df["sale_month"] = calculate_month_difference(df["date"], df["launch_date"])
     return df
 
