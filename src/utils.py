@@ -143,15 +143,18 @@ def predict_submission_data(model: Any, features: list[str] | None = None) -> pd
     return submission
 
 
-def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path | None = None, model: str = "") -> None:
+def save_submission_file(
+    submission: pd.DataFrame, attempt: int = 1, root: Path | None = None, model: str = "", user: str = ""
+) -> None:
+    logging = get_logger(level="auto")
     if model == "":
         model = Path(sys.argv[0]).stem
     if root is None:
         root = Path.cwd()
-    logging = get_logger(level="auto")
-    submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}.csv")
+    user = "_" + user if user else ""
+    submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}{user}.csv")
     while submission_file.exists():
-        submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}.csv")
+        submission_file = root.joinpath(f"data/output/submission_{model}_{attempt}{user}.csv")
         attempt += 1
     logging.info(f"Saving submission file to {submission_file!s}")
     submission.to_csv(submission_file, sep=",", index=False)
@@ -178,10 +181,11 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
     df["year"] = df["date"].dt.year
     df["month"] = df["date"].dt.month
+    df["sale_month"] = calculate_month_difference(df["date"], df["launch_date"])
+    # Features not useful for monthly data
     # df["day"] = df["date"].dt.day
     # df["dayofweek"] = df["date"].dt.dayofweek
     # df["weekofyear"] = df["date"].dt.isocalendar().week
-    df["sale_month"] = calculate_month_difference(df["date"], df["launch_date"])
     return df
 
 
@@ -204,34 +208,12 @@ def identify_future_launches(df_train: pd.DataFrame, df_test: pd.DataFrame) -> t
     )
     return df_train, df_test
 
+
 def turn_dates_to_int(df: pd.DataFrame, date_columns) -> pd.DataFrame:
     for date_name in date_columns:
-        df[date_name+"_int"] = df[date_name].astype('int64')
+        df[date_name + "_int"] = df[date_name].astype("int64")
 
     return df
-
-
-# def evaluate(model, X, y, cv, model_prop=None, model_step=None) -> None:
-#     cv_results = cross_validate(
-#         model,
-#         X,
-#         y,
-#         cv=cv,
-#         scoring=["neg_mean_absolute_error", "neg_root_mean_squared_error"],
-#         return_estimator=model_prop is not None,
-#     )
-#     if model_prop is not None:
-#         if model_step is not None:
-#             values = [getattr(m[model_step], model_prop) for m in cv_results["estimator"]]
-#         else:
-#             values = [getattr(m, model_prop) for m in cv_results["estimator"]]
-#         print(f"Mean model.{model_prop} = {np.mean(values)}")
-#     mae = -cv_results["test_neg_mean_absolute_error"]
-#     rmse = -cv_results["test_neg_root_mean_squared_error"]
-#     print(
-#         f"Mean Absolute Error:     {mae.mean():.3f} +/- {mae.std():.3f}\n"
-#         f"Root Mean Squared Error: {rmse.mean():.3f} +/- {rmse.std():.3f}"
-#     )
 
 
 if __name__ == "__main__":
