@@ -3,11 +3,11 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Literal
-from scipy import stats
 
 import numpy as np
 import pandas as pd
 import yaml
+from scipy import stats
 from sklearn.model_selection import cross_validate
 
 pd.set_option("display.max_columns", 100)
@@ -210,7 +210,7 @@ def identify_future_launches(df_train: pd.DataFrame, df_test: pd.DataFrame) -> t
     return df_train, df_test
 
 
-def turn_dates_to_int(df: pd.DataFrame, date_columns) -> pd.DataFrame:
+def turn_dates_to_int(df: pd.DataFrame, date_columns: list[str]) -> pd.DataFrame:
     for date_name in date_columns:
         df[date_name + "_int"] = df[date_name].astype("int64")
 
@@ -232,9 +232,52 @@ def train_test_validation_split(
     )
     return X_train, X_validate, X_test, y_train, y_validate, y_test
 
-def remove_outlier_data(df: pd.DataFrame, column_name, threshold_z) -> pd.DataFrame:
+
+def remove_outlier_data(df: pd.DataFrame, column_name: str, threshold_z: int) -> pd.DataFrame:
+    """Remove outlier data from a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to remove outliers from.
+        column_name (str): The column to remove outliers from.
+        threshold_z (int): The threshold for the z-score. i.e. 3 is 3 standard deviations from the mean.
+
+    Returns:
+        pd.DataFrame: The DataFrame with outliers removed.
+    """
     df = df[stats.zscore(df[column_name]) <= threshold_z]
     return df
+
+
+def replace_minus_one_with_mean(
+    df: pd.DataFrame,
+    include_columns: list[str] | None,
+    exclude_columns: list[str] | None,
+) -> pd.DataFrame:
+    """Replace -1 values with the mean of the column.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to replace values in.
+        include_columns (list[str] | None): The columns to include. Defaults to None.
+        exclude_columns (list[str] | None): The columns to exclude. Defaults to None.
+
+    Returns:
+        pd.DataFrame: The DataFrame with values replaced.
+    """
+    columns = []
+    if include_columns is None and exclude_columns is None:
+        columns = df.columns
+    elif include_columns is not None and exclude_columns is not None:
+        columns = list(set(include_columns) - set(exclude_columns))
+    elif include_columns is not None:
+        columns = include_columns
+    elif exclude_columns is not None:
+        columns = df.columns.difference(exclude_columns)
+    else:
+        return df
+    df[columns] = df[columns].replace(-1, np.nan)
+    df[columns] = df[columns].fillna(df[columns].mean())
+    return df
+
 
 if __name__ == "__main__":
     from models.models import Naive
