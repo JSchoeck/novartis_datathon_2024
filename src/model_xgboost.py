@@ -53,7 +53,8 @@ drop_features = [
     # "insurance_perc_che",
     "therapeutic_area",
     "country",
-    # "corporation",
+    "corporation",
+    "drug_id",
 ]
 potential_corr_features = [
     # "cluster_nl",
@@ -95,7 +96,7 @@ display(df_features.head(3))
 
 
 # %%
-# xgb_model = XGBRegressor(
+# model = XGBRegressor(
 #     enable_categorical=True,
 #     tree_method="hist",
 #     max_depth=6,  # higher number takes much longer top run. 5 or 6 is good for quick checks
@@ -124,10 +125,10 @@ display(df_features.head(3))
 #     print(df_train["date"].iloc[idx[0][0]], "to", df_train["date"].iloc[idx[0][-1]])
 #     # fit
 #     X_train, y_train = df_features.iloc[idx[0]], s_target.iloc[idx[0]]
-#     xgb_model.fit(X_train, y_train)
+#     model.fit(X_train, y_train)
 #     X_test, y_test = df_features.iloc[idx[1]].copy(), s_target.iloc[idx[1]]
 #     # predict
-#     X_test.loc[:, "prediction"] = xgb_model.predict(X_test[selected_features])
+#     X_test.loc[:, "prediction"] = model.predict(X_test[selected_features])
 #     # NOTE: required for metric calculation are ["cluster_nl", "date", "target", "prediction", "zero_actuals"]
 #     # TODO: check if indexing is correct for the following columns ["cluster_nl", "date", "target", "zero_actuals"]
 #     if "cluster_nl" not in X_test.columns:
@@ -164,7 +165,7 @@ display(df_features.head(3))
 
 # cyme_scorer = helper.cyme_scorer()
 # grid_search = GridSearchCV(
-#     estimator=xgb_model,
+#     estimator=model,
 #     param_grid=param_grid,
 #     # scoring=cyme_scorer,
 #     cv=ts_cv,
@@ -177,8 +178,8 @@ display(df_features.head(3))
 
 # %%
 # Use the best estimator to make predictions
-# best_model = grid_search.best_estimator_
-best_model = XGBRegressor(
+# model = grid_search.best_estimator_
+model = XGBRegressor(
     enable_categorical=True,
     tree_method="hist",
     max_depth=5,  # 4 for dev, 12 for submit
@@ -189,17 +190,16 @@ best_model = XGBRegressor(
 
 # Split data into train and test set
 test_year = 2022
-# TODO: loop over all possible years to find the best year to split / lowest CYME score
 
 X_train, y_train = df_features[df_features["year"] < test_year], s_target[df_features["year"] < test_year]
 X_test, y_test = df_features[df_features["year"] >= test_year], s_target[df_features["year"] >= test_year]
 
 # Fit model on train set
-best_model.fit(X_train, y_train)
+model.fit(X_train, y_train)
 
 # Predict and evaluate
 df_pred = X_test.copy()
-df_pred["prediction"] = best_model.predict(df_pred)
+df_pred["prediction"] = model.predict(df_pred)
 df_pred["date"] = df_train["date"]
 df_pred["target"] = df_train["target"]
 X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
@@ -207,13 +207,17 @@ df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
 
 cyme_score = helper.compute_metric(df_pred)
 metric_recent, metric_future = helper.compute_metric_terms(df_pred)
+feature_importances = dict(zip(model.feature_names_in_, model.feature_importances_, strict=True))
+sorted_feature_importances = dict(sorted(feature_importances.items(), key=lambda item: item[1], reverse=True))
 
-print("Test year:", test_year)
+print("\nTest year:", test_year)
 print("CYME:", cyme_score)
 print("CYME Recent Launches:", metric_recent)
 print("CYME Future Launches:", metric_future)
-
-xgb_model = best_model
+print("\nFeature Importances:")
+for feature, importance in sorted_feature_importances.items():
+    print(f"{feature}: {importance:.3f}")
+print("\n")
 
 
 # %%
@@ -224,7 +228,7 @@ submission[categorical_features] = submission[categorical_features].astype(
     {col: "category" for col in categorical_features}
 )
 
-submission["prediction"] = xgb_model.predict(submission[selected_features])
+submission["prediction"] = model.predict(submission[selected_features])
 root = Path.cwd().parent
 # utils.save_submission_file(submission, root=root)  # NOTE: Uncomment to save submission file
 
