@@ -244,7 +244,7 @@ def remove_outlier_data(df: pd.DataFrame, column_name: str, threshold_z: int) ->
     Returns:
         pd.DataFrame: The DataFrame with outliers removed.
     """
-    df = df[stats.zscore(df[column_name]) <= threshold_z]
+    df = df[np.abs(stats.zscore(df[column_name])) <= threshold_z]
     return df
 
 
@@ -278,6 +278,20 @@ def replace_minus_one_with_mean(
     df[columns] = df[columns].fillna(df[columns].mean())
     return df
 
+def add_sum_first_year(df: pd.DataFrame,) -> pd.DataFrame:
+    df_copy = df.copy()
+
+    df_copy["min_year_and_one"] = df.groupby(["cluster_nl","drug_id"])["launch_date"].transform(lambda x: pd.to_datetime(x).min() + pd.DateOffset(years=1))
+
+    df_returning = pd.DataFrame()
+
+    for grouping,group_df in  df_copy.groupby(["cluster_nl","drug_id"]):
+        under_min = group_df[group_df["date"] <= group_df["min_year_and_one"]]
+        group_df["sum_of_first_year_targets"] = under_min["target"].sum()
+        df_returning = pd.concat([df_returning,group_df])
+
+    print(df_returning.describe())
+    return df_returning
 
 if __name__ == "__main__":
     from models.models import Naive

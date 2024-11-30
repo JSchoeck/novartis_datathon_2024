@@ -12,12 +12,7 @@ P = utils.load_settings()["params"]
 df_train = utils.load_data("train")
 df_submission = utils.load_data("predict")
 
-columns_to_average = ["che_pc_usd", "che_perc_gdp", "public_perc_che","insurance_perc_che", "price_month"]
-
-df_train  = utils.replace_minus_one_with_mean(df_train,columns_to_average)
-df_submission  = utils.replace_minus_one_with_mean(df_submission,columns_to_average)
-
-df_train = utils.remove_outlier_data(df_train,"prev_perc",3)
+#df_train  = utils.replace_minus_one_with_mean(df_train,["che_pc_usd", "che_perc_gdp", "public_perc_che"])
 
 df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
@@ -90,6 +85,8 @@ print("CYME Future Launches:", metric_future)
 #TODO actually predict on the submission data, is already gotten as df_submission
 
 # removing -1 from submission data?
+df_submission = df_submission.replace(-1, np.nan)
+df_submission.select_dtypes(include=["number"]).fillna(df_submission.select_dtypes(include=["number"]).mean())
 
 df_submission["prediction"] = model.predict(df_submission) # NOTE: Uncomment to save submission file
 df_submission["date"] = df_submission_dates
