@@ -162,4 +162,5 @@ cython_debug/
 #.idea/
 
 # Submissions
-submission_attempt_*.csv
+submission_*.csv
+/catboost_info
