@@ -11,6 +11,8 @@ P = utils.load_settings()["params"]
 df_train = utils.load_data("train")
 df_submission = utils.load_data("predict")
 
+df_train = utils.remove_outlier_data(df_train, "price_unit", 5)
+
 df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
 target_series = df_train.pop("target")
