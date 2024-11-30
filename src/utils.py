@@ -204,6 +204,11 @@ def identify_future_launches(df_train: pd.DataFrame, df_test: pd.DataFrame) -> t
     )
     return df_train, df_test
 
+# def turn_dates_to_float(df: pd.DataFrame,date_columns) -> pd.DataFrame:
+#     for date_name in date_columns:
+#         df[date_name+"_float"] = df[date_name]
+#     return 
+
 
 # def evaluate(model, X, y, cv, model_prop=None, model_step=None) -> None:
 #     cv_results = cross_validate(

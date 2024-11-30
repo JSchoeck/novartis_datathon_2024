@@ -29,3 +29,11 @@ How to go about creating this cold case:
 -models to use potentially: Overall Mean, XGBoost, CatBoost, 
 -cluster_nl + date is unique ID for a row - can remove duplicates i think
 
+-throw out all data that is older than 1 year
+
+
+Saturday
+- remove outliers - find outliers
+- negative 1 values, what do we do with it.
+- potentially look into different python models?
+
