@@ -15,20 +15,21 @@ df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
 target_series = df_train.pop("target")
 
-#ensure dates are saaved for later
-df_dates = df_train["date"]
-submission_dates = df_submission["date"]
+#ensure dates are saved for later
+df_train_dates = df_train["date"]
+df_submission_dates = df_submission["date"]
 
 # update date features
-# date_features =[
-#     "date",
-#     "launch_date",
-#     "ind_launch_date"
-# ]
+date_features =[
+    "date",
+    # "launch_date",
+    # "ind_launch_date"
+]
 
-# df_train = utils.turn_dates_to_float(df_train,date_features)
-# df_submission = utils.turn_dates_to_float(df_submission,date_features) # TODO make method in utils to convert to a float of some sort
+df_train = utils.turn_dates_to_int(df_train,date_features)
+df_submission = utils.turn_dates_to_int(df_submission,date_features) # TODO make method in utils to convert to a float of some sort
 
+print(df_train.head(10))
 # specify the rest of the features
 cat_features = [
     "brand",
@@ -47,7 +48,7 @@ df_train = df_train[features].astype({col: "category" for col in cat_features})
 df_submission = df_submission[features].astype({col: "category" for col in cat_features})
 
 # Set year split
-test_year = 2021
+test_year = 2022
 
 # Split data to training and test data
 X_train, y_train = df_train[df_train["year"] < test_year], target_series[df_train["year"] < test_year]
@@ -55,8 +56,7 @@ X_test = df_train[df_train["year"] >= test_year]
 
 # Set up regressor model
 model = CatBoostRegressor(
-                          learning_rate=1,
-                          depth=2,
+                          depth=8,
                           cat_features = cat_features
                           )
                           #eval_metric = utils.AccuracyMetric() #TODO add eval metric custom
@@ -70,7 +70,7 @@ df_pred["prediction"] = model.predict(X_test)
 
 # Set up Zero Actuals # TODO Ensure this is working correctly
 print(df_train.columns)
-df_pred["date"] = df_dates
+df_pred["date"] = df_train_dates
 df_pred["target"] = target_series
 X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
 df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
@@ -85,5 +85,6 @@ print("CYME Recent Launches:", metric_recent)
 print("CYME Future Launches:", metric_future)
 
 #TODO actually predict on the submission data, is already gotten as df_submission
-# df_submission["prediction"] = model.predict(df_submission) # NOTE: Uncomment to save submission file
-# utils.save_submission_file(submission)  # NOTE: Uncomment to save submission file
+df_submission["prediction"] = model.predict(df_submission) # NOTE: Uncomment to save submission file
+df_submission["date"] = df_submission_dates
+utils.save_submission_file(df_submission)  # NOTE: Uncomment to save submission file
