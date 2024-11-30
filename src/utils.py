@@ -7,6 +7,7 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 import yaml
+from pandas.core.groupby.generic import DataFrameGroupBy
 from scipy import stats
 from sklearn.model_selection import cross_validate
 
@@ -277,6 +278,95 @@ def replace_minus_one_with_mean(
     df[columns] = df[columns].replace(-1, np.nan)
     df[columns] = df[columns].fillna(df[columns].mean())
     return df
+
+
+def add_ltm_kpis(
+    df: pd.DataFrame,
+    fill_strategy: Literal["overall_mean", "cluster_mean", None] = "cluster_mean",
+    fill_postprocessing: Literal["ffill", "bfill", None] = "bfill",
+    columns: tuple[str] = ("target",),
+) -> pd.DataFrame:
+    grouped = df.groupby(["cluster_nl"])
+    for col in columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            df = calculate_ltm_kpi(df, grouped, col, fill_strategy, fill_postprocessing)
+        else:
+            msg = f"Column {col} is not numeric, cannot calculate LTM KPI for it."
+            raise ValueError(msg)
+    return df
+
+
+def calculate_ltm_kpi(
+    df: pd.DataFrame,
+    grouped: DataFrameGroupBy,
+    col: str = "target",
+    fill_strategy: Literal["overall_mean", "cluster_mean", None] = "cluster_mean",
+    fill_postprocessing: Literal["ffill", "bfill", None] = "bfill",
+) -> pd.DataFrame:
+    MONTHS_IN_YEAR = 12
+    logging.info(f"Calculating LTM_{col} for each cluster_nl.")
+    r_sum = (
+        grouped[[col, "date"]]
+        .rolling(window=MONTHS_IN_YEAR, on="date", min_periods=MONTHS_IN_YEAR)
+        .sum()
+        .reset_index(1, drop=True)
+    )
+    ltm_col = "ltm_" + col
+    for cluster in r_sum.index.unique():
+        cluster_not_yet_launched_for_12_months = df.loc[df["cluster_nl"] == cluster]["sale_month"] < MONTHS_IN_YEAR
+        cluster_months_launched = df.loc[df["cluster_nl"] == cluster]["sale_month"]
+
+        match fill_strategy:
+            case "overall_mean":
+                fill_func = ltm_fill_with_overall_mean
+            case "cluster_mean":
+                fill_func = ltm_fill_with_cluster_mean
+            case _:
+                fill_func = ltm_fill_with_nan
+
+        df.loc[df["cluster_nl"] == cluster, ltm_col] = np.where(
+            # cond: if max months_open for store is less than 12
+            cluster_not_yet_launched_for_12_months,
+            # true: scale values <12 months_open up, based on mean of existing values; ltm starts at 1*mean up to 12*mean
+            fill_func(df=df, col=col, cluster=cluster, cluster_months_launched=cluster_months_launched),
+            # false: use rolling sum for last twelve months
+            ltm_rolling_sum(col, r_sum, cluster),
+        ).round(1)
+        # Fill missing values for the first 12 entries, if a store was already open for more than 12 months at the beginning of the data
+        if fill_postprocessing == "ffill":
+            df.loc[df["cluster_nl"] == cluster, ltm_col] = df.loc[df["cluster_nl"] == cluster, ltm_col].ffill(  # type: ignore
+                limit=MONTHS_IN_YEAR
+            )
+        elif fill_postprocessing == "bfill":
+            df.loc[df["cluster_nl"] == cluster, ltm_col] = df.loc[df["cluster_nl"] == cluster, ltm_col].bfill(  # type: ignore
+                limit=MONTHS_IN_YEAR
+            )
+        else:
+            pass
+    df.loc[:, ltm_col] = df.loc[:, ltm_col].round(1)
+    return df
+
+
+def ltm_fill_with_nan(cluster_months_launched: pd.Series, **kwargs) -> pd.Series:
+    return pd.Series(np.nan, index=cluster_months_launched.index)
+
+
+def ltm_fill_with_cluster_mean(
+    df: pd.DataFrame, col: str, cluster: str, cluster_months_launched: pd.Series
+) -> pd.Series:
+    mean_cluster_value = df.loc[df["cluster_nl"] == cluster, col].mean()
+    return mean_cluster_value * cluster_months_launched / 12
+
+
+def ltm_fill_with_overall_mean(
+    df: pd.DataFrame, col: str, cluster: str, cluster_months_launched: pd.Series
+) -> pd.Series:
+    mean_overall_value = df.loc[(df["country"] == df[df["cluster_nl"] == cluster]["country"].iloc[0]), col].mean()  # type: ignore
+    return mean_overall_value * cluster_months_launched / 12
+
+
+def ltm_rolling_sum(col: str, r_sum: pd.DataFrame, cluster: str) -> pd.Series:
+    return r_sum.loc[r_sum.index.get_level_values("cluster_nl") == cluster][col]
 
 
 if __name__ == "__main__":
