@@ -2,37 +2,27 @@
 import multiprocessing
 from pathlib import Path
 
-import xgboost as xgb
 from IPython.display import display
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from xgboost import XGBRegressor
 
 import helper
 import utils
 
+print("---")
 logging = utils.get_logger(__name__)
 P = utils.load_settings()["params"]
 
 # %%
 ################ Parameters ################
+validation_year = 2021
 test_year = 2022
-enable_categorical = True  # good?
-tree_method = "hist"  # good?
-max_depth = 4  # 4 for dev, 12-30 for submit??
-n_estimators = 200  # 500 for dev, 200 for submit??
-max_cat_threshold = 1000  # good?
-
-################# Settings #################
-n_jobs = multiprocessing.cpu_count() - 1
-
-# %%
-df_train = utils.load_data("train")
-
-# %%
-df_features = df_train.copy()
-
-df_features = utils.add_date_features(df_features)
-
+model_params = {
+    "enable_categorical": True,  # good?
+    "tree_method": "hist",  # good?
+    "max_depth": 6,  # 4-7 is good, more is overfitting with default number of features
+    "n_estimators": 200,  # 500 for dev, 200 for submit??
+    "max_cat_threshold": 1000,  # good?
+}
 drop_features = [
     # "price_month",
     # "insurance_perc_che",
@@ -41,6 +31,9 @@ drop_features = [
     "corporation",
     "drug_id",
 ]
+################# Settings #################
+submit = False  # Set to True to generate submission file # TODO
+n_jobs = multiprocessing.cpu_count() - 1
 categorical_features = [
     "brand",
     "cluster_nl",
@@ -51,38 +44,41 @@ categorical_features = [
     "therapeutic_area",
 ]
 
-# date_features = ["day", "week_of_year", "month", "year"]
+# %%
+df_train = utils.load_data("train")
 
+# %%
+df_features = df_train.copy()
+
+# Feature Engineering
+df_features = utils.add_date_features(df_features)
+
+# Feature Manipulation
 numerical_features = list(df_features.select_dtypes(include=["number"]).drop(columns=["target"]).columns)
-
 df_features[categorical_features] = df_features[categorical_features].astype(
     {col: "category" for col in categorical_features}
 )
 
+# Feature Selection
 selected_features = categorical_features + numerical_features
 selected_features = [feature for feature in selected_features if feature not in drop_features]
-s_target = df_features.pop("target")
 df_features = df_features[selected_features]
-
-print(s_target.dtypes, s_target.shape, "\n")
-print(df_features.dtypes, df_features.shape)
+print("\nSelected Features:")
 display(df_features.head(3))
+print("\n")
 
 
 # %%
+# Split data
+X_train, X_validate, X_test, y_train, y_validate, y_test = train_test_validation_split(
+    df_features, df_train, validation_year, test_year
+)
+# %%
 # Define model
 model = XGBRegressor(
-    enable_categorical=enable_categorical,
-    tree_method=tree_method,
-    max_depth=max_depth,  # 4 for dev, 12 for submit
-    n_estimators=n_estimators,
-    max_cat_threshold=max_cat_threshold,
+    **model_params,
     n_jobs=n_jobs,
 )
-
-# Split data into train and test set
-X_train, y_train = df_features[df_features["year"] < test_year], s_target[df_features["year"] < test_year]
-X_test, y_test = df_features[df_features["year"] >= test_year], s_target[df_features["year"] >= test_year]
 
 # Fit model on train set
 model.fit(X_train, y_train)
@@ -98,29 +94,31 @@ X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
 df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
 
 # Evaluate
+print("\nTest year:", test_year)
 cyme_score = helper.compute_metric(df_pred)
 metric_recent, metric_future = helper.compute_metric_terms(df_pred)
-feature_importances = dict(zip(model.feature_names_in_, model.feature_importances_, strict=True))
-sorted_feature_importances = dict(sorted(feature_importances.items(), key=lambda item: item[1], reverse=True))
-print("\nTest year:", test_year)
-print("CYME:", cyme_score)
-print("CYME Recent Launches:", metric_recent)
-print("CYME Future Launches:", metric_future)
-print("\nFeature Importances:")
-for feature, importance in sorted_feature_importances.items():
-    print(f"{feature}: {importance:.3f}")
-print("\n")
+try:
+    feature_importances = dict(zip(model.feature_names_in_, model.feature_importances_, strict=True))
+    sorted_feature_importances = dict(sorted(feature_importances.items(), key=lambda item: item[1], reverse=True))
+    print("\nFeature Importances:")
+    for feature, importance in sorted_feature_importances.items():
+        print(f"{feature}: {importance:.3f}")
+except AttributeError:
+    logging.warning("Feature importances not available for this model.")
+print("\nCYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
+print("---")
 
 
 # %%
 # Prepare submission data and file
-submission = utils.load_data("predict")
-submission = utils.add_date_features(submission)
+if submit:
+    submission = utils.load_data("predict")
+    submission = utils.add_date_features(submission)
 
-submission[categorical_features] = submission[categorical_features].astype(
-    {col: "category" for col in categorical_features}
-)
+    submission[categorical_features] = submission[categorical_features].astype(
+        {col: "category" for col in categorical_features}
+    )
 
-submission["prediction"] = model.predict(submission[selected_features])
-root = Path.cwd()  # .parent
-utils.save_submission_file(submission, root=root, user=P["user"])  # NOTE: Uncomment to save submission file
+    submission["prediction"] = model.predict(submission[selected_features])
+    root = Path.cwd()  # .parent
+    utils.save_submission_file(submission, root=root, user=P["user"])  # NOTE: Uncomment to save submission file
