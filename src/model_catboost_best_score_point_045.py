@@ -11,7 +11,7 @@ P = utils.load_settings()["params"]
 df_train = utils.load_data("train")
 df_submission = utils.load_data("predict")
 
-df_train = utils.remove_outlier_data(df_train, "price_unit", 6)
+# df_train = utils.remove_outlier_data(df_train, "price_unit", 5)
 
 df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
@@ -27,6 +27,9 @@ date_features =[
     # "launch_date",
     # "ind_launch_date"
 ]
+
+# df_train = utils.turn_dates_to_int(df_train,date_features)
+# df_submission = utils.turn_dates_to_int(df_submission,date_features) # TODO make method in utils to convert to a float of some sort
 
 # specify the rest of the features
 cat_features = [
