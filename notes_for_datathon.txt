@@ -37,3 +37,10 @@ Saturday
 - negative 1 values, what do we do with it.
 - potentially look into different python models?
 
+
+
+-sales in first 12 months
+-primary key being cluster_nl and drug_id
+-create new column -> sales_firt_year
+-fill this with sum of the target for the first year of that drugs / clusternl's
+-remove data from first 12 months as it is invalid
