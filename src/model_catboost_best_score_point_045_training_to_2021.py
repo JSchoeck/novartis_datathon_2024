@@ -2,7 +2,6 @@ import multiprocessing
 import helper
 import utils
 import dateutil.parser
-import numpy as np
 
 from catboost import CatBoostRegressor
 
@@ -12,10 +11,7 @@ P = utils.load_settings()["params"]
 df_train = utils.load_data("train")
 df_submission = utils.load_data("predict")
 
-# df_train = utils.remove_outlier_data(df_train, "price_unit", 6)
-
-df_train = df_train.replace(-1, np.nan)
-df_train.select_dtypes(include=["number"]).fillna(df_train.select_dtypes(include=["number"]).mean())
+# df_train = utils.remove_outlier_data(df_train, "price_unit", 5)
 
 df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
@@ -31,6 +27,9 @@ date_features =[
     # "launch_date",
     # "ind_launch_date"
 ]
+
+# df_train = utils.turn_dates_to_int(df_train,date_features)
+# df_submission = utils.turn_dates_to_int(df_submission,date_features) # TODO make method in utils to convert to a float of some sort
 
 # specify the rest of the features
 cat_features = [
@@ -50,15 +49,15 @@ df_train = df_train[features].astype({col: "category" for col in cat_features})
 df_submission = df_submission[features].astype({col: "category" for col in cat_features})
 
 # Set year split
-test_year = 2022
+test_year = 2021
 
 # Split data to training and test data
 X_train, y_train = df_train[df_train["year"] < test_year], target_series[df_train["year"] < test_year]
-X_test = df_train[df_train["year"] >= test_year]
+X_test = df_train[df_train["year"] >= (test_year+1)]
 
 # Set up regressor model
 model = CatBoostRegressor(
-                          depth=8,
+                          depth=4,
                           cat_features = cat_features
                           )
                           #eval_metric = utils.AccuracyMetric() #TODO add eval metric custom
@@ -87,11 +86,6 @@ print("CYME Recent Launches:", metric_recent)
 print("CYME Future Launches:", metric_future)
 
 #TODO actually predict on the submission data, is already gotten as df_submission
-
-# removing -1 from submission data?
-df_submission = df_submission.replace(-1, np.nan)
-df_submission.select_dtypes(include=["number"]).fillna(df_submission.select_dtypes(include=["number"]).mean())
-
 df_submission["prediction"] = model.predict(df_submission) # NOTE: Uncomment to save submission file
 df_submission["date"] = df_submission_dates
 utils.save_submission_file(df_submission)  # NOTE: Uncomment to save submission file
