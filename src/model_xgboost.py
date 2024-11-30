@@ -21,6 +21,7 @@ from xgboost import XGBRegressor
 import helper
 import utils
 
+logging = utils.get_logger(__name__)
 P = utils.load_settings()["params"]
 
 
@@ -47,6 +48,13 @@ df_features = df_train.copy()
 
 df_features = utils.add_date_features(df_features)
 
+drop_features = [
+    # "price_month",
+    # "insurance_perc_che",
+    "therapeutic_area",
+    "country",
+    # "corporation",
+]
 potential_corr_features = [
     # "cluster_nl",
     # "corporation",
@@ -76,7 +84,8 @@ df_features[categorical_features] = df_features[categorical_features].astype(
 )
 
 selected_features = categorical_features + numerical_features
-selected_features = [feature for feature in selected_features if feature not in potential_corr_features]
+drop_features += potential_corr_features
+selected_features = [feature for feature in selected_features if feature not in drop_features]
 s_target = df_features.pop("target")
 df_features = df_features[selected_features]
 
@@ -86,14 +95,14 @@ display(df_features.head(3))
 
 
 # %%
-xgb_model = XGBRegressor(
-    enable_categorical=True,
-    tree_method="hist",
-    max_depth=6,  # higher number takes much longer top run. 5 or 6 is good for quick checks
-    n_estimators=100,
-    max_cat_threshold=1000,
-    n_jobs=multiprocessing.cpu_count() - 1,
-)
+# xgb_model = XGBRegressor(
+#     enable_categorical=True,
+#     tree_method="hist",
+#     max_depth=6,  # higher number takes much longer top run. 5 or 6 is good for quick checks
+#     n_estimators=100,
+#     max_cat_threshold=1000,
+#     n_jobs=multiprocessing.cpu_count() - 1,
+# )
 
 
 # %%
@@ -217,6 +226,6 @@ submission[categorical_features] = submission[categorical_features].astype(
 
 submission["prediction"] = xgb_model.predict(submission[selected_features])
 root = Path.cwd().parent
-utils.save_submission_file(submission, root=root)  # NOTE: Uncomment to save submission file
+# utils.save_submission_file(submission, root=root)  # NOTE: Uncomment to save submission file
 
 # %%
