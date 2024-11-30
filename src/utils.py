@@ -216,6 +216,22 @@ def turn_dates_to_int(df: pd.DataFrame, date_columns) -> pd.DataFrame:
     return df
 
 
+def train_test_validation_split(
+    df_features: pd.DataFrame, df_train: pd.DataFrame, validation_year: int, test_year: int
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
+    df_features["target"] = df_train["target"]
+    X_train = df_features[df_features["year"] < validation_year].copy()
+    X_validate = df_features[df_features["year"] == validation_year].copy()
+    X_test = df_features[df_features["year"] == test_year].copy()
+    y_train = X_train.pop("target")
+    y_validate = X_validate.pop("target")
+    y_test = X_test.pop("target")
+    logging.info(
+        f"{X_train.shape=}, {X_validate.shape=}, {X_test.shape=}, {y_train.shape=}, {y_validate.shape=}, {y_test.shape=}"
+    )
+    return X_train, X_validate, X_test, y_train, y_validate, y_test
+
+
 if __name__ == "__main__":
     from models.models import Naive
 
