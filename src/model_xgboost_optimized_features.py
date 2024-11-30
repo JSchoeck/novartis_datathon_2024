@@ -70,7 +70,7 @@ print("\n")
 
 # %%
 # Split data
-X_train, X_validate, X_test, y_train, y_validate, y_test = train_test_validation_split(
+X_train, X_validate, X_test, y_train, y_validate, y_test = utils.train_test_validation_split(
     df_features, df_train, validation_year, test_year
 )
 # %%
@@ -82,21 +82,7 @@ model = XGBRegressor(
 
 # Fit model on train set
 model.fit(X_train, y_train)
-
-# Predict
-df_pred = X_test.copy()
-df_pred["prediction"] = model.predict(df_pred)
-
-# Add necessary columns for evaluation
-df_pred["date"] = df_train["date"]
-df_pred["target"] = df_train["target"]
-X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
-df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
-
-# Evaluate
-print("\nTest year:", test_year)
-cyme_score = helper.compute_metric(df_pred)
-metric_recent, metric_future = helper.compute_metric_terms(df_pred)
+# Output info about fitted model
 try:
     feature_importances = dict(zip(model.feature_names_in_, model.feature_importances_, strict=True))
     sorted_feature_importances = dict(sorted(feature_importances.items(), key=lambda item: item[1], reverse=True))
@@ -105,10 +91,45 @@ try:
         print(f"{feature}: {importance:.3f}")
 except AttributeError:
     logging.warning("Feature importances not available for this model.")
-print("\nCYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
+print("")
+
+# Predict
+df_pred = X_validate.copy()
+df_pred["prediction"] = model.predict(df_pred)
+
+# Add necessary columns for evaluation
+df_pred["date"] = df_train["date"]
+df_pred["target"] = df_train["target"]
+X_train, df_pred = utils.identify_future_launches(X_train, df_pred)
+df_pred.loc[df_pred.index, "zero_actuals"] = df_pred["zero_actuals"]
+
+# Evaluate on validation set
+print("\nValidation year:", validation_year)
+cyme_score = helper.compute_metric(df_pred)
+metric_recent, metric_future = helper.compute_metric_terms(df_pred)
+
+print("CYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
 print("---")
 
 
+# %%
+# Predict on test set
+df_test = X_test.copy()
+df_test["prediction"] = model.predict(df_test)
+
+# Add necessary columns for evaluation
+df_test["date"] = df_train["date"]
+df_test["target"] = df_train["target"]
+X_train, df_test = utils.identify_future_launches(X_train, df_test)
+df_test.loc[df_test.index, "zero_actuals"] = df_test["zero_actuals"]
+
+# Evaluate on test set
+print("\nTest year:", test_year)
+cyme_score = helper.compute_metric(df_test)
+metric_recent, metric_future = helper.compute_metric_terms(df_test)
+
+print("CYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
+print("---")
 # %%
 # Prepare submission data and file
 if submit:
