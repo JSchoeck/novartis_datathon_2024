@@ -383,6 +383,24 @@ def ltm_rolling_sum(col: str, r_sum: pd.DataFrame, cluster: str) -> pd.Series:
     return r_sum.loc[r_sum.index.get_level_values("cluster_nl") == cluster][col]
 
 
+class MetricEvaluation:
+    '''Count of wrong predictions'''
+    
+    def is_max_optimal(self):
+        False
+
+    def evaluate(self, approxes, target, weight):  
+        print(approxes)
+        print(target)
+        print(weight)
+        y_pred = np.array(approxes).argmax(0)
+        y_true = np.array(target)
+                                    
+        return sum(y_pred!=y_true), 1
+
+    def get_final_error(self, error, weight):
+        return error
+
 if __name__ == "__main__":
     from models.models import Naive
 

@@ -17,7 +17,7 @@ columns_to_average = ["che_pc_usd", "che_perc_gdp", "public_perc_che","insurance
 df_train  = utils.replace_minus_one_with_mean(df_train,columns_to_average)
 df_submission  = utils.replace_minus_one_with_mean(df_submission,columns_to_average)
 
-df_train = utils.remove_outlier_data(df_train,"prev_perc",3)
+df_train = utils.remove_outlier_data(df_train,"prev_perc",4)
 
 df_train = utils.add_date_features(df_train)
 df_submission = utils.add_date_features(df_submission)
@@ -59,8 +59,9 @@ X_test = df_train[df_train["year"] >= test_year]
 
 # Set up regressor model
 model = CatBoostRegressor(
-                          depth=12,
-                          cat_features = cat_features
+                          depth=11,
+                          cat_features = cat_features,
+                          eval_metric = utils.MetricEvaluation()
                           )
                           #eval_metric = utils.AccuracyMetric() #TODO add eval metric custom
 
