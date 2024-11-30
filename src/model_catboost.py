@@ -55,7 +55,7 @@ X_test = df_train[df_train["year"] >= test_year]
 
 # Set up regressor model
 model = CatBoostRegressor(
-                          depth=6,
+                          depth=8,
                           cat_features = cat_features
                           )
                           #eval_metric = utils.AccuracyMetric() #TODO add eval metric custom
