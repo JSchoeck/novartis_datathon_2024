@@ -127,6 +127,7 @@ def load_data(kind: Literal["train", "train_sample", "predict"]) -> pd.DataFrame
     if kind == "train_sample":
         data = data.tail(1000)
     logging.info(f"Data loaded successfully: {data.shape[0]:,} rows and {data.shape[1]:,} columns.")
+    logging.debug(f"Columns: {data.columns.to_list()}")
     return data
 
 
@@ -153,6 +154,23 @@ def save_submission_file(submission: pd.DataFrame, attempt: int = 1, root: Path 
     submission.to_csv(submission_file, sep=",", index=False)
 
 
+def calculate_month_difference(date1: pd.Series, date2: pd.Series) -> pd.Series:
+    """Calculate the number of months between two dates.
+
+    Args:
+        date1 (str): The first date.
+        date2 (str): The second date.
+
+    Returns:
+        int: The number of months between the two dates.
+    """
+    date1 = pd.to_datetime(date1)
+    date2 = pd.to_datetime(date2)
+    year_diff = date1.dt.year - date2.dt.year
+    month_diff = date1.dt.month - date2.dt.month
+    return year_diff * 12 + month_diff
+
+
 def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
     df["year"] = df["date"].dt.year
@@ -160,6 +178,7 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     # df["day"] = df["date"].dt.day
     # df["dayofweek"] = df["date"].dt.dayofweek
     df["weekofyear"] = df["date"].dt.isocalendar().week
+    df["sale_month"] = calculate_month_difference(df["date"], df["launch_date"])
     return df
 
 
@@ -210,4 +229,4 @@ if __name__ == "__main__":
     from models.models import Naive
 
     df_submission = predict_submission_data(Naive())
-    save_submission_file(df_submission)
+    # save_submission_file(df_submission)
