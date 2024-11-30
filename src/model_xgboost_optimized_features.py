@@ -22,6 +22,7 @@ model_params = {
     "max_depth": 6,  # 4-7 is good, more is overfitting with default number of features
     "n_estimators": 200,  # 500 for dev, 200 for submit??
     "max_cat_threshold": 1000,  # good?
+    "n_jobs": multiprocessing.cpu_count() - 1,
 }
 drop_features = [
     # "price_month",
@@ -33,7 +34,6 @@ drop_features = [
 ]
 ################# Settings #################
 submit = False  # Set to True to generate submission file # TODO
-n_jobs = multiprocessing.cpu_count() - 1
 categorical_features = [
     "brand",
     "cluster_nl",
@@ -75,10 +75,7 @@ X_train, X_validate, X_test, y_train, y_validate, y_test = utils.train_test_vali
 )
 # %%
 # Define model
-model = XGBRegressor(
-    **model_params,
-    n_jobs=n_jobs,
-)
+model = XGBRegressor(**model_params)
 
 # Fit model on train set
 model.fit(X_train, y_train)
