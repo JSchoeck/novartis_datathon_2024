@@ -29,7 +29,6 @@ date_features =[
 df_train = utils.turn_dates_to_int(df_train,date_features)
 df_submission = utils.turn_dates_to_int(df_submission,date_features) # TODO make method in utils to convert to a float of some sort
 
-print(df_train.head(10))
 # specify the rest of the features
 cat_features = [
     "brand",
@@ -56,7 +55,7 @@ X_test = df_train[df_train["year"] >= test_year]
 
 # Set up regressor model
 model = CatBoostRegressor(
-                          depth=8,
+                          depth=6,
                           cat_features = cat_features
                           )
                           #eval_metric = utils.AccuracyMetric() #TODO add eval metric custom

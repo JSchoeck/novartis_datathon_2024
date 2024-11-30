@@ -1,5 +1,5 @@
 params:
-  user: "js"
+  user: "sw"
   test_size: 0.3
 
 features:
