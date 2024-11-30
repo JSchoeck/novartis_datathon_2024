@@ -250,8 +250,8 @@ def remove_outlier_data(df: pd.DataFrame, column_name: str, threshold_z: int) ->
 
 def replace_minus_one_with_mean(
     df: pd.DataFrame,
-    include_columns: list[str] | None,
-    exclude_columns: list[str] | None,
+    include_columns: list[str] | None = None,
+    exclude_columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Replace -1 values with the mean of the column.
 
