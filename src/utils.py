@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Literal
+from scipy import stats
 
 import numpy as np
 import pandas as pd
@@ -232,7 +233,7 @@ def train_test_validation_split(
     return X_train, X_validate, X_test, y_train, y_validate, y_test
 
 def remove_outlier_data(df: pd.DataFrame, column_name, threshold_z) -> pd.DataFrame:
-    df = df[np.abs(stats.zscore(df[column_name])) <= threshold_z]
+    df = df[stats.zscore(df[column_name]) <= threshold_z]
     return df
 
 if __name__ == "__main__":
