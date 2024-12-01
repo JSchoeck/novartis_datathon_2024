@@ -172,8 +172,8 @@ def calculate_month_difference(date1: pd.Series, date2: pd.Series) -> pd.Series:
     Returns:
         int: The number of months between the two dates.
     """
-    date1 = pd.to_datetime(date1)
-    date2 = pd.to_datetime(date2)
+    date1 = pd.to_datetime(date1.replace("-1", np.nan))
+    date2 = pd.to_datetime(date2.replace("-1", np.nan))
     year_diff = date1.dt.year - date2.dt.year
     month_diff = date1.dt.month - date2.dt.month
     return year_diff * 12 + month_diff
@@ -184,6 +184,7 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     df["year"] = df["date"].dt.year
     df["month"] = df["date"].dt.month
     df["sale_month"] = calculate_month_difference(df["date"], df["launch_date"])
+    df["ind_sale_month"] = calculate_month_difference(df["date"], df["ind_launch_date"])
     # Features not useful for monthly data
     # df["day"] = df["date"].dt.day
     # df["dayofweek"] = df["date"].dt.dayofweek
@@ -204,10 +205,10 @@ def identify_future_launches(df_train: pd.DataFrame, df_test: pd.DataFrame) -> t
     # set zero_actuals to True in df_test for all future launches
     df_test["zero_actuals"] = False
     df_test.loc[df_test["cluster_nl"].isin(future_launches), "zero_actuals"] = True
-    logging.info(f"Future launches have {df_test['zero_actuals'].sum():,} rows in the test set.")
-    logging.info(
-        f"Recent launches have {df_test['zero_actuals'].count()-df_test['zero_actuals'].sum():,} rows in the test set."
-    )
+    # logging.info(f"Future launches have {df_test['zero_actuals'].sum():,} rows in the test set.")
+    # logging.info(
+    #     f"Recent launches have {df_test['zero_actuals'].count()-df_test['zero_actuals'].sum():,} rows in the test set."
+    # )
     return df_train, df_test
 
 
@@ -279,20 +280,26 @@ def replace_minus_one_with_mean(
     df[columns] = df[columns].fillna(df[columns].mean())
     return df
 
-def add_sum_first_year(df: pd.DataFrame,) -> pd.DataFrame:
+
+def add_sum_first_year(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
     df_copy = df.copy()
 
-    df_copy["min_year_and_one"] = df.groupby(["cluster_nl","drug_id"])["launch_date"].transform(lambda x: pd.to_datetime(x).min() + pd.DateOffset(years=1))
+    df_copy["min_year_and_one"] = df.groupby(["cluster_nl", "drug_id"])["launch_date"].transform(
+        lambda x: pd.to_datetime(x).min() + pd.DateOffset(years=1)
+    )
 
     df_returning = pd.DataFrame()
 
-    for grouping,group_df in  df_copy.groupby(["cluster_nl","drug_id"]):
+    for grouping, group_df in df_copy.groupby(["cluster_nl", "drug_id"]):
         under_min = group_df[group_df["date"] <= group_df["min_year_and_one"]]
         group_df["sum_of_first_year_targets"] = under_min["target"].sum()
-        df_returning = pd.concat([df_returning,group_df])
+        df_returning = pd.concat([df_returning, group_df])
 
     print(df_returning.describe())
     return df_returning
+
 
 def add_ltm_kpis(
     df: pd.DataFrame,
@@ -383,26 +390,10 @@ def ltm_rolling_sum(col: str, r_sum: pd.DataFrame, cluster: str) -> pd.Series:
     return r_sum.loc[r_sum.index.get_level_values("cluster_nl") == cluster][col]
 
 
-class MetricEvaluation:
-    '''Count of wrong predictions'''
-    
-    def is_max_optimal(self):
-        False
-
-    def evaluate(self, approxes, target, weight):  
-        print(approxes)
-        print(target)
-        print(weight)
-        y_pred = np.array(approxes).argmax(0)
-        y_true = np.array(target)
-                                    
-        return sum(y_pred!=y_true), 1
-
-    def get_final_error(self, error, weight):
-        return error
-
 if __name__ == "__main__":
     from models.models import Naive
 
     df_submission = predict_submission_data(Naive())
     # save_submission_file(df_submission)
+
+logger = get_logger(__name__)

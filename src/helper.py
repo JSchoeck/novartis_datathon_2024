@@ -93,3 +93,30 @@ def compute_metric_terms(submission: pd.DataFrame) -> tuple[float, float]:
 def cyme_scorer() -> Callable:
     """Return a scorer for the CYME metric."""
     return make_scorer(score_func=_metric, response_method="predict", greater_is_better=False)
+
+
+class CYMEMetric:
+    def is_max_optimal(self) -> bool:
+        return False
+
+    def evaluate(self, approxes, target, weight) -> tuple[float, float]:
+        # print(f"{approxes=}")
+        # print(f"{target=}")
+        # print(f"{weight=}")
+        assert len(approxes) == 1
+        assert len(target) == len(approxes[0])
+
+        approx = approxes[0]
+
+        error_sum = 0.0
+        weight_sum = 0.0
+
+        for i in range(len(approx)):
+            w = 1.0 if weight is None else weight[i]
+            weight_sum += w
+            error_sum += w * ((approx[i] - target[i]) ** 2)
+
+        return error_sum, weight_sum
+
+    def get_final_error(self, error: float, weight: float) -> float:
+        return error / (weight + 1e-38)
