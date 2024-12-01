@@ -17,9 +17,10 @@ P = utils.load_settings()["params"]
 ################ Parameters ################
 validation_year = 2021
 test_year = 2022
+add_ltm_columns = False
 model_params: dict[str, Any] = {
-    # "depth": 8,
-    "iterations": 100,
+    "depth": 12,
+    "iterations": 1000,
     # "cat_features": cat_features,
     "verbose": 0,
 }
@@ -27,10 +28,11 @@ drop_features = [
     # "price_month",
     # "insurance_perc_che",
     "therapeutic_area",
-    "country",
-    "corporation",
-    "drug_id",
+    # "country",
+    # "corporation",
+    # "drug_id",
 ]
+
 ################# Settings #################
 submit = False  # Set to True to generate submission file # TODO
 categorical_features = [
@@ -42,6 +44,8 @@ categorical_features = [
     "indication",
     "therapeutic_area",
 ]
+
+################# Model-specific additions #################
 model_params["cat_features"] = list(set(categorical_features) - set(drop_features))
 
 
@@ -59,6 +63,12 @@ numerical_features = list(df_features.select_dtypes(include=["number"]).drop(col
 df_features[categorical_features] = df_features[categorical_features].astype(
     {col: "category" for col in categorical_features}
 )
+
+# Improve Data Quality
+df_features = utils.replace_minus_one_with_mean(df_features, include_columns=numerical_features)
+if add_ltm_columns:
+    df_features = utils.add_ltm_kpis(df_features, columns=("target",))
+
 
 # Feature Selection
 selected_features = categorical_features + numerical_features
@@ -128,15 +138,23 @@ metric_recent, metric_future = helper.compute_metric_terms(df_test)
 
 print("CYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
 print("---")
+
+
 # %%
 # Prepare submission data and file
 if submit:
     submission = utils.load_data("predict")
+
+    # Perform all data preparation steps like in the training data (cleaning, filling, feature engineering)
     submission = utils.add_date_features(submission)
+    if add_ltm_columns:
+        # TODO: ltm_kpis need previous data, so train data needs to be joined with submission data (see xgboost model)
+        submission = utils.add_ltm_kpis(submission, columns=("target",))
 
     submission[categorical_features] = submission[categorical_features].astype(
         {col: "category" for col in categorical_features}
     )
+    submission = utils.replace_minus_one_with_mean(submission, include_columns=numerical_features)
 
     submission["prediction"] = model.predict(submission[selected_features])
     root = Path.cwd()  # .parent
