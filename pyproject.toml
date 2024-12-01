@@ -17,8 +17,8 @@ python = ">=3.11,<3.12"
 # geopy = { version = "^2.4", optional = true }
 # geoviews = { version = "^1.11", optional = true }  # required for hvplot geo plots; install "plotting" extras as well
 # holidays = "^0.42"
-# holoviews = { version = "^1.18", optional = true }
-# hvplot = { version = "^0.10", optional = true }
+# holoviews = "^1.18"
+# hvplot = "^0.10"
 lightgbm = "^4.5"
 matplotlib = "^3.9"
 # meteostat ="^1.6"
@@ -32,7 +32,7 @@ scikit-learn = "^1.5"
 # seaborn = "^0.13"
 # shap = "^0.44"
 # sqlalchemy = "^2.0"
-streamlit = "^1.40"
+# streamlit = "^1.40"
 # tenacity = "^8.2"
 tqdm = "^4.67"
 xgboost = "^2.1"
@@ -44,6 +44,7 @@ statsforecast = "^2.0.0"
 mlforecast = "^0.15.0"
 catboost = "^1.2.7"
 darts = "^0.31.0"
+lazypredict = "^0.2.13"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29"
@@ -81,7 +82,7 @@ quote-style = "double"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "D", "Q", "W", "I", "N", "ANN", "COM", "C4", "EM", "PT", "SIM", "RUF", "NPY", "TRY", "PLW", "PLE", "PLC", "PLR", "PD"]
-ignore = ["E501", "D100", "D101", "D102", "D103", "D206", "D300", "D104", "N803", "N806", "PD901", "RUF005", "E712", "COM812", "COM819", "E111", "E114", "E117", "W191", "ANN101", "F401"]
+ignore = ["E501", "D100", "D101", "D102", "D103", "D206", "D300", "D104", "N803", "N806", "PD901", "RUF005", "E712", "COM812", "COM819", "E111", "E114", "E117", "W191", "F401"]
 unfixable = ["F401", "F841"]
 task-tags = ["TODO", "BUG", "NOTE"]
 
