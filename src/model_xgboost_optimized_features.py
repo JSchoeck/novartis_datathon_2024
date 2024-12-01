@@ -2,6 +2,7 @@
 import multiprocessing
 from pathlib import Path
 
+import pandas as pd
 from IPython.display import display
 from xgboost import XGBRegressor
 
@@ -14,8 +15,9 @@ P = utils.load_settings()["params"]
 
 # %%
 ################ Parameters ################
-validation_year = 2021
+validation_year = 2022
 test_year = 2022
+add_ltm_columns = False
 model_params = {
     "enable_categorical": True,  # good?
     "tree_method": "hist",  # good?
@@ -32,6 +34,7 @@ drop_features = [
     "corporation",
     "drug_id",
 ]
+
 ################# Settings #################
 submit = False  # Set to True to generate submission file # TODO
 categorical_features = [
@@ -44,20 +47,30 @@ categorical_features = [
     "therapeutic_area",
 ]
 
+################# Model-specific additions #################
+
+
 # %%
 df_train = utils.load_data("train")
+if submit:
+    submission = utils.load_data("predict")
 
 # %%
 df_features = df_train.copy()
 
 # Feature Engineering
 df_features = utils.add_date_features(df_features)
+if add_ltm_columns:
+    df_features = utils.add_ltm_kpis(df_features, columns=("target",))
 
 # Feature Manipulation
 numerical_features = list(df_features.select_dtypes(include=["number"]).drop(columns=["target"]).columns)
 df_features[categorical_features] = df_features[categorical_features].astype(
     {col: "category" for col in categorical_features}
 )
+
+# Improve Data Quality
+df_features = utils.replace_minus_one_with_mean(df_features, include_columns=numerical_features)
 
 # Feature Selection
 selected_features = categorical_features + numerical_features
@@ -127,15 +140,32 @@ metric_recent, metric_future = helper.compute_metric_terms(df_test)
 
 print("CYME:", round(cyme_score, 3), "- Recent:", round(metric_recent, 3), "Future:", round(metric_future, 3))
 print("---")
+
+
 # %%
 # Prepare submission data and file
 if submit:
-    submission = utils.load_data("predict")
-    submission = utils.add_date_features(submission)
-
-    submission[categorical_features] = submission[categorical_features].astype(
-        {col: "category" for col in categorical_features}
-    )
+    # Perform all data preparation steps like in the training data (cleaning, filling, feature engineering)
+    submission = utils.add_date_features(submission)  # type: ignore
+    if add_ltm_columns:
+        submission_length = len(submission)
+        df_features["date"] = df_train["date"]
+        submission = utils.add_ltm_kpis(
+            pd.concat(
+                [df_features.drop(columns=["ltm_target"]), submission[df_features.drop(columns=["ltm_target"]).columns]]
+            ).reset_index(),
+            columns=("target",),
+        )
+        submission = utils.add_ltm_kpis(submission, columns=("target",))
+        submission = submission[-submission_length:]
+        submission[["brand", "cluster_nl", "indication"]] = submission[["brand", "cluster_nl", "indication"]].astype(
+            {col: "category" for col in ["brand", "cluster_nl", "indication"]}
+        )
+    else:
+        submission[categorical_features] = submission[categorical_features].astype(
+            {col: "category" for col in categorical_features}
+        )
+    submission = utils.replace_minus_one_with_mean(submission, include_columns=numerical_features)
 
     submission["prediction"] = model.predict(submission[selected_features])
     root = Path.cwd()  # .parent
